@@ -6,11 +6,7 @@
 \alias{_PACKAGE}
 \title{tibblify: Rectangle Nested Lists}
 \description{
-A tool to rectangle a nested list, that is to convert it into a
-    tibble. This is done automatically or according to a given specification.
-    A common use case is for nested lists coming from parsing JSON files or
-    the JSON response of REST APIs. It is supported by the 'vctrs' package
-    and therefore offers a wide support of vector types.
+A tool to rectangle a nested list, that is to convert it into a tibble. This is done automatically or according to a given specification. A common use case is for nested lists coming from parsing JSON files or the JSON response of REST APIs. It is supported by the 'vctrs' package and therefore offers a wide support of vector types.
 }
 \seealso{
 Useful links:
@@ -21,7 +17,12 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Maximilian Girlich \email{maximilian.girlich@outlook.com}
+\strong{Maintainer}: Maximilian Girlich \email{maximilian.girlich@outlook.com} [copyright holder]
+
+Other contributors:
+\itemize{
+  \item Kirill Müller [contributor]
+}
 
 }
 \keyword{internal}

@@ -1,242 +1,262 @@
-test_known_output <- function(x, name, width = 80) {
-  expect_known_output(
-    print(x, width = width),
-    test_path("data", paste0("format_", name, ".txt"))
-  )
-}
+test_that("can format tib_unspecified()", {
+  local_options(cli.num_colors = 1)
 
-test_that("format for vectors works", {
-  test_known_output(
-    lcol_chr("a"),
-    "chr"
-  )
+  expect_snapshot(tib_unspecified("a") %>% print())
+})
 
-  test_known_output(
-    lcol_dat("a"),
-    "dat"
-  )
+test_that("format for scalars works", {
+  local_options(cli.num_colors = 1)
 
-  test_known_output(
-    lcol_dbl("a"),
-    "dbl"
-  )
+  expect_snapshot(tib_chr("a") %>% print())
+  expect_snapshot(tib_date("a") %>% print())
+  expect_snapshot(tib_dbl("a") %>% print())
+  # expect_snapshot(tib_dtt("a") %>% print())
+  expect_snapshot(tib_int("a") %>% print())
+  expect_snapshot(tib_lgl("a") %>% print())
 
-  test_known_output(
-    lcol_dtt("a"),
-    "dtt"
-  )
+  expect_snapshot(tib_variant("a") %>% print())
 
-  test_known_output(
-    lcol_guess("a"),
-    "guess"
-  )
+  expect_snapshot(tib_int("a", fill = NA_integer_) %>% print())
+  expect_snapshot(tib_int("a", fill = 1) %>% print())
 
-  test_known_output(
-    lcol_lgl("a"),
-    "lgl"
+  expect_snapshot(tib_int("a", transform = as.integer) %>% print())
+  expect_snapshot(tib_int("a", fill = NA_integer_, transform = as.integer) %>% print())
+
+  expect_snapshot(tib_scalar("a", ptype = new_difftime(units = "mins")) %>% print())
+
+  expect_snapshot(
+    tib_row(
+      "a",
+      x = tib_int("x"),
+      y = tib_dbl("y", fill = NA_real_),
+      z = tib_chr("z", fill = "abc")
+    ) %>% print()
   )
 
-  test_known_output(
-    lcol_lst("a"),
-    "lst"
-  )
-
-  test_known_output(
-    lcol_skip("a"),
-    "skip"
-  )
-
-  test_known_output(
-    lcol_int("a"),
-    "vector1"
-  )
-
-  test_known_output(
-    lcol_int("a", .default = NA_integer_),
-    "vector2"
-  )
-
-  test_known_output(
-    lcol_int("a", .parser = as.integer),
-    "vector3"
-  )
-
-  test_known_output(
-    lcol_int("a", .default = NA_integer_, .parser = as.integer),
-    "vector4"
-  )
-
-  test_known_output(
-    lcol_vec("a", ptype = new_difftime(units = "mins")),
-    "lcol_vec"
-  )
-
-  skip("lcol_fct not yet implemented")
-  test_known_output(
-    lcol_fct("a"),
-    "fct"
+  expect_snapshot(
+    tib_int(
+      key = "x",
+      ptype_inner = character(),
+      fill = "a"
+    )
   )
 })
 
 
 test_that("format breaks long lines", {
-  test_known_output(
-    lcol_df(
+  local_options(cli.num_colors = 1)
+  expect_snapshot(
+    tib_row(
       "path",
-      a_long_name = lcol_dbl("a loooooooooooooooooooog name", .default = 1)
-    ),
-    width = 70,
-    "does_not_break_short_lines"
+      a_long_name = tib_dbl("a looooooooooooooooooooong name", fill = 1)
+    ) %>%
+      print(width = 60)
   )
 
-  test_known_output(
-    lcol_df(
+  expect_snapshot(
+    tib_row(
       "path",
-      a_long_name = lcol_dbl("a loooooooooooooooooooog name", .default = 1)
-    ),
-    width = 69,
-    "breaks_long_lines"
+      a_long_name = tib_dbl("a looooooooooooooooooooong name", fill = 1)
+    ) %>%
+       print(width = 69)
   )
 })
 
 
-test_that("format for lst_of works", {
-  test_known_output(
-    lcol_lst_of("a", .ptype = character()),
-    "lst_of"
+test_that("format for tib_vector works", {
+  local_options(cli.num_colors = 1)
+  expect_snapshot(tib_chr_vec("a") %>% print())
+  expect_snapshot(tib_vector("a", ptype = vctrs::new_duration()) %>% print())
+
+  expect_snapshot(
+    tib_vector(
+      "a",
+      ptype = vctrs::new_duration(),
+      input_form = "object",
+      values_to = "vals",
+      names_to = "names"
+    ) %>%
+      print()
+  )
+
+  # multi value default
+  expect_snapshot(tib_int_vec("a", fill = 1:2) %>% print())
+
+  expect_snapshot(
+    tib_int_vec(
+      key = "x",
+      ptype_inner = character(),
+      fill = 1:2
+    )
   )
 })
 
-test_that("format for lcol_df works", {
-  x <- lcol_df(
-    "formats",
-    text = lcol_chr("text", .default = NA_character_)
-  )
+test_that("format for tib_chr_date works", {
+  expect_snapshot({
+    tib_chr_date("a")
+    tib_chr_date("a", required = FALSE, fill = "2022-01-01", format = "%Y")
+  })
 
-  test_known_output(
-    x,
-    "lcol_df_simple"
-  )
+  expect_snapshot({
+    tib_chr_date_vec("a")
+    tib_chr_date_vec("a", required = FALSE, fill = as.Date("2022-01-01"), format = "%Y")
+  })
+})
 
-  x <- lcol_df(
-    "basic_information",
-    labels = lcol_df(
-      "labels",
-      name = lcol_chr("name"),
-      entity_type = lcol_chr("entity_type"),
-      catno = lcol_chr("catno"),
-      resource_url = lcol_chr("resource_url"),
-      id = lcol_int("id"),
-      entity_type_name = lcol_chr("entity_type_name")
-    ),
-    year = lcol_int("year"),
-    master_url = lcol_chr("master_url", .default = NA),
-    artists = lcol_df_lst(
-      "artists",
-      join = lcol_chr("join"),
-      name = lcol_chr("name"),
-      anv = lcol_chr("anv"),
-      tracks = lcol_chr("tracks"),
-      role = lcol_chr("role"),
-      resource_url = lcol_chr("resource_url"),
-      id = lcol_int("id")
-    ),
-    id = lcol_int("id"),
-    thumb = lcol_chr("thumb"),
-    title = lcol_chr("title"),
-    formats = lcol_df_lst(
+test_that("format for tib_row works", {
+  local_options(cli.num_colors = 1)
+  expect_snapshot(
+    tib_row(
       "formats",
-      descriptions = lcol_lst_of(
-        "descriptions",
-        .ptype = character(0),
-        .parser = ~ vec_c(!!!.x, .ptype = character()),
-        .default = NULL
-      ),
-      text = lcol_chr("text", .default = NA),
-      name = lcol_chr("name"),
-      qty = lcol_chr("qty")
-    ),
-    cover_image = lcol_chr("cover_image"),
-    resource_url = lcol_chr("resource_url"),
-    master_id = lcol_int("master_id")
+      text = tib_chr("text", fill = NA_character_)
+    ) %>%
+      print()
   )
 
-  test_known_output(
-    x,
-    "lcol_df_complex"
+  expect_snapshot(
+    tib_row(
+      "formats",
+      text = tib_chr("text"),
+      .required = FALSE
+    ) %>%
+      print()
+  )
+
+  expect_snapshot(
+    tib_row(
+      "basic_information",
+      labels = tib_row(
+        "labels",
+        name = tib_chr("name"),
+        entity_type = tib_chr("entity_type"),
+        catno = tib_chr("catno"),
+        resource_url = tib_chr("resource_url"),
+        id = tib_int("id"),
+        entity_type_name = tib_chr("entity_type_name")
+      ),
+      year = tib_int("year"),
+      master_url = tib_chr("master_url", fill = NA),
+      artists = tib_df(
+        "artists",
+        join = tib_chr("join"),
+        name = tib_chr("name"),
+        anv = tib_chr("anv"),
+        tracks = tib_chr("tracks"),
+        role = tib_chr("role"),
+        resource_url = tib_chr("resource_url"),
+        id = tib_int("id")
+      ),
+      id = tib_int("id"),
+      thumb = tib_chr("thumb"),
+      title = tib_chr("title"),
+      formats = tib_df(
+        "formats",
+        descriptions = tib_chr_vec(
+          "descriptions",
+          fill = NULL
+        ),
+        text = tib_chr("text", fill = NA),
+        name = tib_chr("name"),
+        qty = tib_chr("qty")
+      ),
+      cover_image = tib_chr("cover_image"),
+      resource_url = tib_chr("resource_url"),
+      master_id = tib_int("master_id")
+    ) %>%
+      print()
   )
 })
 
+test_that("format for tib_variant works", {
+  expect_snapshot(tib_variant("a"))
+  expect_snapshot(tib_variant("a", fill = tibble(a = 1:2)))
+})
 
-test_that("format lcols works", {
-  test_known_output(
-    lcols(
-      lcol_int("instance_id"),
-      lcol_chr("date_added")
-    ),
-    "lcols_simple"
+test_that("format for tib_df works", {
+  local_options(cli.num_colors = 1)
+  expect_snapshot(
+    tib_df(
+      "formats",
+      text = tib_chr("text", fill = NA_character_)
+    ) %>%
+      print()
   )
 
-  test_known_output(
-    lcols(
-      lcol_int("instance_id"),
-      lcol_chr("date_added"),
-      .default = lcol_chr(zap())
-    ),
-    "lcols_default"
+  expect_snapshot(
+    tib_df(
+      "formats",
+      text = tib_chr("text"),
+      .required = FALSE
+    ) %>%
+      print()
   )
 
-  col_specs <- lcols(
-    lcol_int("instance_id"),
-    lcol_chr("date_added"),
-    lcol_df(
-      "basic_information",
-      labels = lcol_df_lst(
-        "labels",
-        name = lcol_chr("name"),
-        entity_type = lcol_chr("entity_type"),
-        catno = lcol_chr("catno"),
-        resource_url = lcol_chr("resource_url"),
-        id = lcol_int("id"),
-        entity_type_name = lcol_chr("entity_type_name")
-      ),
-      year = lcol_int("year"),
-      master_url = lcol_chr("master_url", .default = NA),
-      artists = lcol_df_lst(
-        "artists",
-        join = lcol_chr("join"),
-        name = lcol_chr("name"),
-        anv = lcol_chr("anv"),
-        tracks = lcol_chr("tracks"),
-        role = lcol_chr("role"),
-        resource_url = lcol_chr("resource_url"),
-        id = lcol_int("id")
-      ),
-      id = lcol_int("id"),
-      thumb = lcol_chr("thumb"),
-      title = lcol_chr("title"),
-      formats = lcol_df_lst(
-        "formats",
-        descriptions = lcol_lst_of(
-          "descriptions",
-          .ptype = character(0),
-          .parser = ~ vec_c(!!!.x, .ptype = character()),
-          .default = NULL
-        ),
-        text = lcol_chr("text", .default = NA),
-        name = lcol_chr("name"),
-        qty = lcol_chr("qty")
-      ),
-      cover_image = lcol_chr("cover_image"),
-      resource_url = lcol_chr("resource_url"),
-      master_id = lcol_int("master_id")
-    ),
-    lcol_int("id"),
-    lcol_int("rating"),
+  expect_snapshot(
+    tib_df(
+      "formats",
+      .names_to = "nms",
+      text = tib_chr("text")
+    ) %>%
+      print()
+  )
+})
+
+test_that("prints non-canonical names", {
+  expect_snapshot({
+    tspec_df(b = tib_int("a")) %>% format()
+    tspec_df(b = tib_int(c("a", "b"))) %>% format()
+  })
+})
+
+test_that("can force to print canonical names", {
+  withr::local_options(list(tibblify.print_names = TRUE))
+
+  expect_snapshot(format(
+    tspec_df(
+      a = tib_int("a"),
+      b = tib_df(
+        "b",
+        x = tib_int("x")
+      )
+    )
+  ))
+})
+
+test_that("special ptypes correctly formatted", {
+  expect_snapshot({
+    tib_scalar("a", ptype = character(), ptype_inner = Sys.Date()) %>% format()
+    tib_scalar("a", ptype = character(), ptype_inner = Sys.time()) %>% format()
+  })
+})
+
+test_that("format for empty tib_df works", {
+  expect_equal(format(tspec_df()), "tspec_df()")
+  expect_equal(format(tspec_row()), "tspec_row()")
+  expect_equal(format(tspec_object()), "tspec_object()")
+  expect_equal(format(tib_df("x")), "tib_df(\n  \"x\",\n)")
+  expect_equal(format(tib_row("x")), "tib_row(\n  \"x\",\n)")
+})
+
+test_that("prints arguments of spec_*", {
+  expect_equal(
+    format(tspec_df(tib_int("a"), .input_form = "colmajor")),
+    'tspec_df(\n  .input_form = "colmajor",\n  tib_int("a"),\n)'
   )
 
-  test_known_output(
-    col_specs,
-    "lcols_complex"
+  expect_equal(
+    format(tspec_df(tib_int("a"), .names_to = "nms")),
+    'tspec_df(\n  .names_to = "nms",\n  tib_int("a"),\n)'
+  )
+
+  expect_equal(
+    format(tspec_df(tib_int("a"), vector_allows_empty_list = TRUE)),
+    'tspec_df(\n  vector_allows_empty_list = TRUE,\n  tib_int("a"),\n)'
+  )
+})
+
+test_that("format uses trailing comma", {
+  expect_equal(
+    format(tib_df("x", a = tib_int("a"))),
+    'tib_df(\n  "x",\n  tib_int("a"),\n)'
   )
 })

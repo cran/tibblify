@@ -6,128 +6,164 @@ knitr::opts_chunk$set(
 
 ## ----setup--------------------------------------------------------------------
 
-## ----usage_example------------------------------------------------------------
+## -----------------------------------------------------------------------------
 library(tibblify)
 
-str(politicians[1])
+gh_users_small <- purrr::map(gh_users, ~ .x[c("followers", "login", "url", "name", "location", "email", "public_gists")])
 
-## ----usage_leaders------------------------------------------------------------
-politicians_tibble <- tibblify(politicians)
-politicians_tibble
+names(gh_users_small[[1]])
 
-## ----usage_tibble_column------------------------------------------------------
-politicians_tibble$parents
+## -----------------------------------------------------------------------------
+tibblify(gh_users_small)
 
-## ----usage_list_of_column-----------------------------------------------------
-politicians_tibble$spouses
+## -----------------------------------------------------------------------------
+guess_tspec(gh_users_small)
 
-## ----specification------------------------------------------------------------
-get_spec(politicians_tibble)
-
-## ----path_examples------------------------------------------------------------
-leader <- politicians[[1]]
-
-# get the element `id`
-path <- c("id")
-leader[["id"]]
-
-# get the element `father` in the element `parents`
-path <- c("parents", "father")
-leader[["parents"]][["mother"]]
-
-# get the first element in the element `spouses`
-path <- list("spouses", 1)
-leader[["spouses"]][[1]]
-
-## ----vector_cols--------------------------------------------------------------
-tibblify(
-  politicians,
-  lcols(
-    lcol_int("id"),
-    lcol_chr("name"),
-    `family name` = lcol_chr("surname")
-  )
+## -----------------------------------------------------------------------------
+spec <- tspec_df(
+  login_name = tib_chr("login"),
+  tib_chr("name"),
+  tib_int("public_gists")
 )
 
-## ----missing_elements, error=TRUE---------------------------------------------
-list_default <- list(
-  list(a = 1),
-  list(a = NULL),
-  list(a = integer()),
-  list()
-)
+tibblify(gh_users_small, spec)
 
+## -----------------------------------------------------------------------------
 tibblify(
-  list_default,
-  lcols(lcol_int("a"))
-)
-
-tibblify(
-  list_default,
-  lcols(lcol_int("a", .default = 0))
-)
-
-## ----custom_parser------------------------------------------------------------
-tibblify(
-  politicians,
-  lcols(
-    lcol_chr("surname"),
-    lcol_dat("dob", .parser = ~ as.Date(.x, format = "%Y-%m-%d"))
+  list(
+    list(id = 1, name = "Peter"),
+    list(id = 2, name = "Lilly")
+  ),
+  tspec_df(
+    tib_int("id"),
+    tib_chr("name")
   )
 )
 
 ## -----------------------------------------------------------------------------
-spouses_tbl <- tibblify(
-  politicians,
-  lcols(
-    lcol_chr("surname"),
-    lcol_lst_of("spouses", .ptype = character())
-  )
-)
-
-spouses_tbl$spouses
-
-## -----------------------------------------------------------------------------
-leaders_tibble <- tibblify(
-  politicians,
-  lcols(
-    lcol_chr("surname"),
-    lcol_guess("parents")
-  )
-)
-
-leaders_tibble
-
-## -----------------------------------------------------------------------------
-now <- Sys.time()
-past <- now - c(100, 200)
-
 x <- list(
-  list(timediff = now - past[1]),
-  list(timediff = now - past[2])
+  list(id = 1, duration = vctrs::new_duration(100)),
+  list(id = 2, duration = vctrs::new_duration(200))
 )
-
 x
-
-## -----------------------------------------------------------------------------
-ptype <- as.difftime(0, units = "secs")
-ptype
 
 ## -----------------------------------------------------------------------------
 tibblify(
   x,
-  lcols(
-    lcol_vec("timediff", ptype = ptype)
+  tspec_df(
+    tib_int("id"),
+    tib_scalar("duration", ptype = vctrs::new_duration())
   )
 )
 
 ## -----------------------------------------------------------------------------
+x <- list(
+  list(id = 1, children = c("Peter", "Lilly")),
+  list(id = 2, children = "James"),
+  list(id = 3, children = c("Emma", "Noah", "Charlotte"))
+)
+
 tibblify(
-  politicians,
-  lcols(
-    lcol_chr("name"),
-    lcol_chr("surname"),
-    .default = lcol_lst(path = zap(), .default = NULL)
+  x,
+  tspec_df(
+    tib_int("id"),
+    tib_chr_vec("children")
   )
 )
+
+## -----------------------------------------------------------------------------
+gh_repos_small <- purrr::map(gh_repos, ~ .x[c("id", "name", "owner")])
+gh_repos_small <- purrr::map(
+  gh_repos_small,
+  function(repo) {
+    repo$owner <- repo$owner[c("login", "id", "url")]
+    repo
+  }
+)
+
+gh_repos_small[[1]]
+
+## -----------------------------------------------------------------------------
+spec <- guess_tspec(gh_repos_small)
+spec
+
+## -----------------------------------------------------------------------------
+tibblify(gh_repos_small, spec)
+
+## -----------------------------------------------------------------------------
+spec2 <- tspec_df(
+  id = tib_int("id"),
+  name = tib_chr("name"),
+  owner_id = tib_int(c("owner", "id")),
+  owner_login = tib_chr(c("owner", "login"))
+)
+spec2
+
+tibblify(gh_repos_small, spec2)
+
+## ----error=TRUE---------------------------------------------------------------
+x <- list(
+  list(x = 1, y = "a"),
+  list(x = 2)
+)
+
+spec <- tspec_df(
+  x = tib_int("x"),
+  y = tib_chr("y")
+)
+
+tibblify(x, spec)
+
+## -----------------------------------------------------------------------------
+spec <- tspec_df(
+  x = tib_int("x"),
+  y = tib_chr("y", required = FALSE)
+)
+
+tibblify(x, spec)
+
+## -----------------------------------------------------------------------------
+spec <- tspec_df(
+  x = tib_int("x"),
+  y = tib_chr("y", required = FALSE, fill = "missing")
+)
+
+tibblify(x, spec)
+
+## -----------------------------------------------------------------------------
+api_output <- list(
+  status = "success",
+  requested_at = "2021-10-26 09:17:12",
+  data = list(
+    list(x = 1),
+    list(x = 2)
+  )
+)
+
+## -----------------------------------------------------------------------------
+row_spec <- tspec_row(
+  status = tib_chr("status"),
+  data = tib_df(
+    "data",
+    x = tib_int("x")
+  )
+)
+
+api_output_df <- tibblify(api_output, row_spec)
+api_output_df
+
+## -----------------------------------------------------------------------------
+object_spec <- tspec_object(
+  status = tib_chr("status"),
+  data = tib_df(
+    "data",
+    x = tib_int("x")
+  )
+)
+
+api_output_list <- tibblify(api_output, object_spec)
+api_output_list
+
+## -----------------------------------------------------------------------------
+api_output_list$data
 

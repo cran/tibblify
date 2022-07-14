@@ -2,27 +2,47 @@
 % Please edit documentation in R/tibblify.R
 \name{tibblify}
 \alias{tibblify}
-\title{Rectange a nested list into a tidy tibble}
+\title{Rectangle a nested list}
 \usage{
-tibblify(recordlist, col_specs = lcols(.default = lcol_guess(zap())))
+tibblify(x, spec = NULL, names_to = NULL, unspecified = NULL)
 }
 \arguments{
-\item{recordlist}{A nested list.}
+\item{x}{A nested list.}
 
-\item{col_specs}{A specification generated with \code{lcols()} how to turn the
-list into a tibble.}
+\item{spec}{A specification how to convert \code{x}. Generated with \code{tspec_row()}
+or \code{tspec_df()}.}
+
+\item{names_to}{Deprecated. Use \code{tspec_df(.names_to)} instead.}
+
+\item{unspecified}{A string that describes what happens if the specification
+contains unspecified fields. Can be one of
+\itemize{
+\item \code{"error"}: Throw an error.
+\item \code{"inform"}: Inform.
+\item \code{"drop"}: Do not parse these fields.
+\item \code{"list"}: Parse an unspecified field into a list.
+}}
 }
 \value{
-The tibble generated according to the specification.
+Either a tibble or a list, depending on the specification
 }
 \description{
-Rectange a nested list into a tidy tibble
+Rectangle a nested list
 }
 \examples{
-recordlist <- list(
+x <- list(
   list(id = 1, name = "Tyrion Lannister"),
   list(id = 2, name = "Victarion Greyjoy")
 )
+tibblify(x)
 
-tibblify(recordlist)
+# Provide a specification
+spec <- tspec_df(
+  id = tib_int("id"),
+  name = tib_chr("name")
+)
+tibblify(x, spec)
+
+# Provide a specification for a single object
+tibblify(x[[1]], tspec_object(spec))
 }
