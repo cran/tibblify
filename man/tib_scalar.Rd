@@ -17,6 +17,7 @@
 \alias{tib_date_vec}
 \alias{tib_chr_date_vec}
 \alias{tib_variant}
+\alias{tib_recursive}
 \alias{tib_row}
 \alias{tib_df}
 \title{Create a Field Specification}
@@ -88,6 +89,7 @@ tib_vector(
   fill = NULL,
   ptype_inner = ptype,
   transform = NULL,
+  elt_transform = NULL,
   input_form = c("vector", "scalar_list", "object"),
   values_to = NULL,
   names_to = NULL
@@ -100,6 +102,7 @@ tib_lgl_vec(
   fill = NULL,
   ptype_inner = logical(),
   transform = NULL,
+  elt_transform = NULL,
   input_form = c("vector", "scalar_list", "object"),
   values_to = NULL,
   names_to = NULL
@@ -112,6 +115,7 @@ tib_int_vec(
   fill = NULL,
   ptype_inner = integer(),
   transform = NULL,
+  elt_transform = NULL,
   input_form = c("vector", "scalar_list", "object"),
   values_to = NULL,
   names_to = NULL
@@ -124,6 +128,7 @@ tib_dbl_vec(
   fill = NULL,
   ptype_inner = double(),
   transform = NULL,
+  elt_transform = NULL,
   input_form = c("vector", "scalar_list", "object"),
   values_to = NULL,
   names_to = NULL
@@ -136,6 +141,7 @@ tib_chr_vec(
   fill = NULL,
   ptype_inner = character(),
   transform = NULL,
+  elt_transform = NULL,
   input_form = c("vector", "scalar_list", "object"),
   values_to = NULL,
   names_to = NULL
@@ -148,6 +154,7 @@ tib_date_vec(
   fill = NULL,
   ptype_inner = vctrs::new_date(),
   transform = NULL,
+  elt_transform = NULL,
   input_form = c("vector", "scalar_list", "object"),
   values_to = NULL,
   names_to = NULL
@@ -164,7 +171,16 @@ tib_chr_date_vec(
   format = "\%Y-\%m-\%d"
 )
 
-tib_variant(key, ..., required = TRUE, fill = NULL, transform = NULL)
+tib_variant(
+  key,
+  ...,
+  required = TRUE,
+  fill = NULL,
+  transform = NULL,
+  elt_transform = NULL
+)
+
+tib_recursive(.key, ..., .children, .children_to = .children, .required = TRUE)
 
 tib_row(.key, ..., .required = TRUE)
 
@@ -183,14 +199,13 @@ tib_df(.key, ..., .required = TRUE, .names_to = NULL)
 
 \item{ptype_inner}{A prototype of the field.}
 
-\item{transform}{A function to apply after casting to \code{ptype_inner}.
-When exactly it is applied depends on the field type:
-\itemize{
-\item \code{tib_scalar()} it is applied to the column.
-\item \code{tib_vector()}, \code{tib_variant()} it is applied to each element of the column.
-}}
+\item{transform}{A function to apply to the whole vector after casting to
+\code{ptype_inner}.}
 
 \item{format}{Optional, a string passed to the \code{format} argument of \code{as.Date()}.}
+
+\item{elt_transform}{A function to apply to each element before casting
+to \code{ptype_inner}.}
 
 \item{input_form}{A string that describes what structure the field has. Can
 be one of:
@@ -214,6 +229,10 @@ specified column.
 or \code{"vector"} and 2) \code{values_to} is a string. The inner names of the
 field go into the specified column.
 }}
+
+\item{.children}{A string giving the name of field that contains the children.}
+
+\item{.children_to}{A string giving the column name to store the children.}
 
 \item{.names_to}{A string giving the name of the column which will contain
 the names of elements of the object list. If \code{NULL}, the default, no name

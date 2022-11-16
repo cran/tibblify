@@ -13,6 +13,7 @@ status](https://www.r-pkg.org/badges/version/tibblify)](https://CRAN.R-project.o
 coverage](https://codecov.io/gh/mgirlich/tibblify/branch/master/graph/badge.svg)](https://app.codecov.io/gh/mgirlich/tibblify?branch=master)
 [![R build
 status](https://github.com/mgirlich/tibblify/workflows/R-CMD-check/badge.svg)](https://github.com/mgirlich/tibblify/actions)
+[![R-CMD-check](https://github.com/mgirlich/tibblify/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mgirlich/tibblify/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of tibblify is to provide an easy way of converting a nested
@@ -50,7 +51,7 @@ scraping XML. The reasons to use `tibblify()` over other tools like
 ## Example
 
 Let’s start with `gh_users`, which is a list containing information
-about six GitHub users.
+about four GitHub users.
 
 ``` r
 library(tibblify)
@@ -67,28 +68,31 @@ to it:
 
 ``` r
 tibblify(gh_users_small)
-#> # A tibble: 6 × 7
-#>   followers login       url                    name  location email public_gists
-#>       <int> <chr>       <chr>                  <chr> <chr>    <chr>        <int>
-#> 1       303 gaborcsardi https://api.github.co… Gábo… Chippen… csar…            6
-#> 2       780 jennybc     https://api.github.co… Jenn… Vancouv… <NA>            54
-#> 3      3958 jtleek      https://api.github.co… Jeff… Baltimo… <NA>            12
-#> 4       115 juliasilge  https://api.github.co… Juli… Salt La… <NA>             4
-#> 5       213 leeper      https://api.github.co… Thom… London,… <NA>            46
-#> 6        34 masalmon    https://api.github.co… Maël… Barcelo… <NA>             0
+#> The spec contains 1 unspecified field:
+#> • email
+#> # A tibble: 4 × 7
+#>   followers login      url                          name  locat…¹ email  publi…²
+#>       <int> <chr>      <chr>                        <chr> <chr>   <list>   <int>
+#> 1       780 jennybc    https://api.github.com/user… Jenn… Vancou… <NULL>      54
+#> 2      3958 jtleek     https://api.github.com/user… Jeff… Baltim… <NULL>      12
+#> 3       115 juliasilge https://api.github.com/user… Juli… Salt L… <NULL>       4
+#> 4       213 leeper     https://api.github.com/user… Thom… London… <NULL>      46
+#> # … with abbreviated variable names ¹​location, ²​public_gists
 ```
 
 We can now look at the specification `tibblify()` used for rectangling
 
 ``` r
 guess_tspec(gh_users_small)
+#> The spec contains 1 unspecified field:
+#> • email
 #> tspec_df(
 #>   tib_int("followers"),
 #>   tib_chr("login"),
 #>   tib_chr("url"),
 #>   tib_chr("name"),
 #>   tib_chr("location"),
-#>   tib_chr("email"),
+#>   tib_unspecified("email"),
 #>   tib_int("public_gists"),
 #> )
 ```
@@ -104,15 +108,13 @@ spec <- tspec_df(
 )
 
 tibblify(gh_users_small, spec)
-#> # A tibble: 6 × 3
-#>   login_name  name                   public_gists
-#>   <chr>       <chr>                         <int>
-#> 1 gaborcsardi Gábor Csárdi                      6
-#> 2 jennybc     Jennifer (Jenny) Bryan           54
-#> 3 jtleek      Jeff L.                          12
-#> 4 juliasilge  Julia Silge                       4
-#> 5 leeper      Thomas J. Leeper                 46
-#> 6 masalmon    Maëlle Salmon                     0
+#> # A tibble: 4 × 3
+#>   login_name name                   public_gists
+#>   <chr>      <chr>                         <int>
+#> 1 jennybc    Jennifer (Jenny) Bryan           54
+#> 2 jtleek     Jeff L.                          12
+#> 3 juliasilge Julia Silge                       4
+#> 4 leeper     Thomas J. Leeper                 46
 ```
 
 ## Objects
@@ -498,6 +500,17 @@ api_output_list
 #>   <int>
 #> 1     1
 #> 2     2
+#> 
+#> attr(,"tib_spec")
+#> tspec_object(
+#>   tib_chr("status"),
+#>   tib_df(
+#>     "data",
+#>     tib_int("x"),
+#>   ),
+#> )attr(,"waldo_opts")
+#> attr(,"waldo_opts")$ignore_attr
+#> [1] "tib_spec"   "waldo_opts"
 ```
 
 Now accessing `data` does not required an extra subsetting step

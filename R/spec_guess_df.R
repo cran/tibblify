@@ -7,9 +7,9 @@ guess_tspec_df <- function(x,
                           inform_unspecified = should_inform_unspecified(),
                           call = rlang::current_call()) {
   check_dots_empty()
-  check_flag(empty_list_unspecified, call = call)
-  check_flag(simplify_list, call = call)
-  check_flag(inform_unspecified, call = call)
+  check_bool(empty_list_unspecified, call = call)
+  check_bool(simplify_list, call = call)
+  check_bool(inform_unspecified, call = call)
 
   withr::local_options(list(tibblify.used_empty_list_arg = NULL))
   if (is.data.frame(x)) {
@@ -96,13 +96,13 @@ col_to_spec <- function(col, name, empty_list_unspecified) {
       col_required <- TRUE
       has_non_vec_cols <- purrr::detect_index(ptype, ~ !is_vec(.x) || is.data.frame(.x)) > 0
       if (has_non_vec_cols) {
-        col_flat <- vec_unchop(col, ptype = ptype)
+        col_flat <- list_unchop(col, ptype = ptype)
       } else {
         col_flat <- ptype
       }
     } else {
       col_required <- df_guess_required(col, colnames(ptype))
-      col_flat <- vec_unchop(col, ptype = ptype)
+      col_flat <- list_unchop(col, ptype = ptype)
     }
 
     fields_spec <- purrr::imap(col_flat, col_to_spec, empty_list_unspecified)

@@ -31,6 +31,13 @@ test_that("can infer name from key", {
   })
 })
 
+test_that("drops NULL", {
+  expect_equal(
+    tspec_row(tib_int("a"), NULL, if (FALSE) tib_chr("b")),
+    tspec_row(tib_int("a"))
+  )
+})
+
 test_that("can nest specifications", {
   spec1 <- tspec_row(
     a = tib_int("a"),
@@ -221,18 +228,32 @@ test_that("tib_df() checks arguments", {
   })
 })
 
+test_that("tib_df() drops NULL", {
+  expect_equal(
+    tib_df("df", tib_int("a"), NULL, if (FALSE) tib_chr("b")),
+    tib_df("df", tib_int("a"))
+  )
+})
+
 test_that("special ptypes are not incorrectly recognized", {
-  check_native <- function(ptype) {
+  check_native <- function(ptype, class) {
     expect_s3_class(
-      tib_scalar("a", ptype = vctrs::new_vctr(ptype, inherit_base_type = TRUE)),
+      tib_scalar("a", ptype = ptype),
+      c(paste0("tib_scalar_", class), "tib_scalar", "tib_collector"),
+      exact = TRUE
+    )
+
+    class(ptype) <- c("a", class(ptype))
+    expect_s3_class(
+      tib_scalar("a", ptype = ptype),
       c("tib_scalar", "tib_collector"),
       exact = TRUE
     )
   }
 
-  check_native(logical())
-  check_native(character())
-  check_native(integer())
-  check_native(double())
-  check_native(vctrs::new_date())
+  check_native(logical(), "logical")
+  check_native(character(), "character")
+  check_native(integer(), "integer")
+  check_native(numeric(), "numeric")
+  check_native(vctrs::new_date(), "date")
 })

@@ -1,3 +1,24 @@
+# tibblify 0.3.0
+
+* In column major format all fields are required.
+
+* Fixed a memory leak.
+
+* `tib_vector()` is now uses less memory and is faster.
+
+* `tspec_*()`, `tib_df()`, and `tib_row()` now discard `NULL` in `...`. This
+  makes it easier to add a field conditionally with, for example
+  `tspec_df(if (x) tib_int("a"))`.
+
+* `tib_variant()` and `tib_vector()` give you more control for transforming:
+
+  * `transform` is now applied to the whole vector.
+  
+  * There is a new `elt_transform` argument that is applied to every element.
+
+* New `tspec_recursive()` and `tib_recursive()` to parse tree like structure,
+  e.g. a directory structure with its children.
+
 # tibblify 0.2.0
 
 Major rewrite of the tibblify package with lots of benefits:

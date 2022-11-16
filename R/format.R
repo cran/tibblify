@@ -26,7 +26,7 @@
 #' print(spec, names = TRUE)
 print.tspec <- function(x, width = NULL, ..., names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
   cat(format(x, width = width, ..., names = names))
 
   invisible(x)
@@ -36,7 +36,7 @@ print.tspec <- function(x, width = NULL, ..., names = NULL) {
 #' @export
 format.tspec_df <- function(x, width = NULL, ..., names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
 
   format_fields(
     "tspec_df",
@@ -54,7 +54,7 @@ format.tspec_df <- function(x, width = NULL, ..., names = NULL) {
 #' @export
 format.tspec_row <- function(x, width = NULL, ..., names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
 
   format_fields(
     "tspec_row",
@@ -69,9 +69,28 @@ format.tspec_row <- function(x, width = NULL, ..., names = NULL) {
 }
 
 #' @export
+format.tspec_recursive <- function(x, width = NULL, ..., names = NULL) {
+  names <- names %||% should_force_names()
+  check_bool(names)
+
+  format_fields(
+    "tspec_recursive",
+    fields = x$fields,
+    width = width,
+    args = list(
+      .children = double_tick(x$child),
+      .children_to = if (x$child != x$children_to) double_tick(x$children_to),
+      vector_allows_empty_list = if (x$vector_allows_empty_list) x$vector_allows_empty_list,
+      .input_form = if (x$input_form != "rowmajor") double_tick(x$input_form)
+    ),
+    force_names = names
+  )
+}
+
+#' @export
 format.tspec_object <- function(x, width = NULL, ..., names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
 
   format_fields(
     "tspec_object",
@@ -144,7 +163,7 @@ is_tib_name_canonical <- function(field, name) {
 #' @export
 print.tib_collector <- function(x, width = NULL, ..., names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
 
   cat(format(x, width = width, ..., names = names))
   invisible(x)
@@ -184,7 +203,18 @@ format.tib_scalar <- function(x,
 }
 
 #' @export
-format.tib_variant <- format.tib_scalar
+format.tib_variant <- function(x, ...,
+                              multi_line = FALSE,
+                              nchar_indent = 0,
+                              width = NULL) {
+  format.tib_scalar(
+    x = x,
+    elt_transform = x$elt_transform,
+    multi_line = multi_line,
+    nchar_indent = nchar_indent,
+    width = width
+  )
+}
 #' @export
 format.tib_vector <- function(x, ...,
                               multi_line = FALSE,
@@ -192,6 +222,7 @@ format.tib_vector <- function(x, ...,
                               width = NULL) {
   format.tib_scalar(
     x = x,
+    elt_transform = x$elt_transform,
     input_form = if (!identical(x$input_form, "vector")) {
       double_tick(x$input_form)
     },
@@ -231,10 +262,10 @@ format.tib_vector_chr_date <- format.tib_scalar_chr_date
 #' @export
 format.tib_row <- function(x, ..., width = NULL, names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
 
   format_fields(
-    "tib_row",
+    format_tib_f(x),
     fields = x$fields,
     width = width,
     args = list(
@@ -248,16 +279,35 @@ format.tib_row <- function(x, ..., width = NULL, names = NULL) {
 #' @export
 format.tib_df <- function(x, ..., width = NULL, names = NULL) {
   names <- names %||% should_force_names()
-  check_flag(names)
+  check_bool(names)
 
   format_fields(
-    "tib_df",
+    format_tib_f(x),
     fields = x$fields,
     width = width,
     args = list(
       deparse(x$key),
       `.required` = if (!x$required) FALSE,
       .names_to = double_tick(x$names_col)
+    ),
+    force_names = names
+  )
+}
+
+#' @export
+format.tib_recursive <- function(x, ..., width = NULL, names = NULL) {
+  names <- names %||% should_force_names()
+  check_bool(names)
+
+  format_fields(
+    format_tib_f(x),
+    fields = x$fields,
+    width = width,
+    args = list(
+      deparse(x$key),
+      `.children` = double_tick(x$child),
+      .children_to = if (x$child != x$children_to) double_tick(x$children_to),
+      `.required` = if (!x$required) FALSE
     ),
     force_names = names
   )
@@ -278,7 +328,7 @@ format_tib_f.tib_scalar_logical <- function(x) {cli::col_yellow("tib_lgl")}
 #' @export
 format_tib_f.tib_scalar_integer <- function(x) {cli::col_green("tib_int")}
 #' @export
-format_tib_f.tib_scalar_double <- function(x) {cli::col_green("tib_dbl")}
+format_tib_f.tib_scalar_numeric <- function(x) {cli::col_green("tib_dbl")}
 #' @export
 format_tib_f.tib_scalar_character <- function(x) {cli::col_red("tib_chr")}
 #' @export
@@ -293,7 +343,7 @@ format_tib_f.tib_vector_logical <- function(x) {cli::col_yellow("tib_lgl_vec")}
 #' @export
 format_tib_f.tib_vector_integer <- function(x) {cli::col_green("tib_int_vec")}
 #' @export
-format_tib_f.tib_vector_double <- function(x) {cli::col_green("tib_dbl_vec")}
+format_tib_f.tib_vector_numeric <- function(x) {cli::col_green("tib_dbl_vec")}
 #' @export
 format_tib_f.tib_vector_character <- function(x) {cli::col_red("tib_chr_vec")}
 #' @export
@@ -310,9 +360,11 @@ format_tib_f.tib_variant <- function(x) {"tib_variant"}
 format_tib_f.tib_row <- function(x) {cli::col_magenta("tib_row")}
 #' @export
 format_tib_f.tib_df <- function(x) {cli::col_magenta("tib_df")}
+#' @export
+format_tib_f.tib_recursive <- function(x) {cli::col_magenta("tib_recursive")}
 
 #' @export
-format_tib_f.default <- function(x) {class(x)[[1]]}
+format_tib_f.default <- function(x) {class(x)[[1]]} # nocov
 
 
 # format ptype ------------------------------------------------------------
@@ -339,9 +391,17 @@ format_ptype <- function(x) {
 format_ptype.default <- function(x) {deparse(x)}
 
 #' @export
-format_ptype.difftime <- function(x) {"vctrs::new_duration()"}
+format_ptype.difftime <- function(x) {
+  if (!identical(class(x), "difftime")) return(deparse(x))
+
+  "vctrs::new_duration()"
+}
 #' @export
-format_ptype.Date <- function(x) {"vctrs::new_date()"}
+format_ptype.Date <- function(x) {
+  if (!vec_is(x, vctrs::new_date())) return(deparse(x))
+
+  "vctrs::new_date()"
+}
 #' @export
 format_ptype.POSIXct <- function(x) {
   tzone <- attr(x, "tzone")

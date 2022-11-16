@@ -11,8 +11,12 @@ lcols(..., .default = zap())
 
 \item{.default}{Deprecated.}
 }
+\value{
+A tibblify specification object.
+}
 \description{
-Create list parser specification
+This is the deprecated way of creating a \code{tibblify()} specification. Use the
+\verb{tspec_*()} + \verb{tib_*()} functions instead.
 }
 \examples{
 lcols(
@@ -31,3 +35,4 @@ lcols(
   !!!purrr::map(chr_cols, lcol_chr)
 )
 }
+\keyword{internal}
