@@ -96,7 +96,7 @@ unnest_tree <- function(data,
 
     if (!is_null(ancestors_to)) {
       if (level > 1L) {
-        ancestors_simple <- purrr::map2(cur_ancestors, vctrs::vec_chop(parent_ids), c)
+        ancestors_simple <- purrr::map2(cur_ancestors, vctrs::vec_chop(parent_ids), function(x, y) c(x, y))
         cur_ancestors <- vctrs::vec_rep_each(ancestors_simple, ns)
       }
       level_ancestors[[level]] <- cur_ancestors
@@ -109,7 +109,10 @@ unnest_tree <- function(data,
 
     parent_ids <- data[[id_col]]
     # unclass `list_of` to avoid performance hit
-    children <- purrr::map(children, ~ unclass_list_of(.x, child_col, call = call))
+    children <- with_indexed_errors(
+      purrr::map(children, ~ unclass_list_of(.x, child_col, call = NULL)),
+      message = "In child {cnd$location}."
+    )
     data <- vctrs::list_unchop(children)
 
     level <- level + 1L

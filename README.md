@@ -10,7 +10,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![CRAN
 status](https://www.r-pkg.org/badges/version/tibblify)](https://CRAN.R-project.org/package=tibblify)
 [![Codecov test
-coverage](https://codecov.io/gh/mgirlich/tibblify/branch/master/graph/badge.svg)](https://app.codecov.io/gh/mgirlich/tibblify?branch=master)
+coverage](https://codecov.io/gh/mgirlich/tibblify/branch/master/graph/badge.svg)](https://app.codecov.io/gh/mgirlich/tibblify?branch=main)
 [![R build
 status](https://github.com/mgirlich/tibblify/workflows/R-CMD-check/badge.svg)](https://github.com/mgirlich/tibblify/actions)
 [![R-CMD-check](https://github.com/mgirlich/tibblify/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mgirlich/tibblify/actions/workflows/R-CMD-check.yaml)
@@ -42,11 +42,11 @@ tibble. These lists might come from an API in the form of JSON or from
 scraping XML. The reasons to use `tibblify()` over other tools like
 `jsonlite::fromJSON()` or `tidyr::hoist()` are:
 
--   It can guess the output format like `jsonlite::fromJSON()`.
--   You can also provide a specification how to rectangle.
--   The specification is easy to understand.
--   You can bring most inputs into the shape you want in a single step.
--   Rectangling is much faster than with `jsonlite::fromJSON()`.
+- It can guess the output format like `jsonlite::fromJSON()`.
+- You can also provide a specification how to rectangle.
+- The specification is easy to understand.
+- You can bring most inputs into the shape you want in a single step.
+- Rectangling is much faster than with `jsonlite::fromJSON()`.
 
 ## Example
 
@@ -71,13 +71,12 @@ tibblify(gh_users_small)
 #> The spec contains 1 unspecified field:
 #> • email
 #> # A tibble: 4 × 7
-#>   followers login      url                          name  locat…¹ email  publi…²
-#>       <int> <chr>      <chr>                        <chr> <chr>   <list>   <int>
-#> 1       780 jennybc    https://api.github.com/user… Jenn… Vancou… <NULL>      54
-#> 2      3958 jtleek     https://api.github.com/user… Jeff… Baltim… <NULL>      12
-#> 3       115 juliasilge https://api.github.com/user… Juli… Salt L… <NULL>       4
-#> 4       213 leeper     https://api.github.com/user… Thom… London… <NULL>      46
-#> # … with abbreviated variable names ¹​location, ²​public_gists
+#>   followers login      url                    name  location email  public_gists
+#>       <int> <chr>      <chr>                  <chr> <chr>    <list>        <int>
+#> 1       780 jennybc    https://api.github.co… Jenn… Vancouv… <NULL>           54
+#> 2      3958 jtleek     https://api.github.co… Jeff… Baltimo… <NULL>           12
+#> 3       115 juliasilge https://api.github.co… Juli… Salt La… <NULL>            4
+#> 4       213 leeper     https://api.github.co… Thom… London,… <NULL>           46
 ```
 
 We can now look at the specification `tibblify()` used for rectangling
@@ -127,10 +126,10 @@ Basically, an *object* is simply something that can be converted to a
 one row tibble. This boils down to a condition on the names of the
 object:
 
--   the `object` must have names (the `names` attribute must not be
-    `NULL`),
--   every element must be named (no name can be `NA` or `""`),
--   and the names must be unique.
+- the `object` must have names (the `names` attribute must not be
+  `NULL`),
+- every element must be named (no name can be `NA` or `""`),
+- and the names must be unique.
 
 In other words, the names must fulfill
 `vec_as_names(repair = "check_unique")`. The name-value pairs of an
@@ -147,11 +146,11 @@ fields can become the columns in a tibble.
 
 Providing an explicit specification has a couple of advantages:
 
--   you can ensure type and shape stability of the resulting tibble in
-    automated scripts.
--   you can give the columns different names.
--   you can restrict to parsing only the fields you need.
--   you can specify what happens if a value is missing.
+- you can ensure type and shape stability of the resulting tibble in
+  automated scripts.
+- you can give the columns different names.
+- you can restrict to parsing only the fields you need.
+- you can specify what happens if a value is missing.
 
 As seen before the specification for a collection is done with
 `tspec_df()`. The columns of the output tibble are describe with the
@@ -159,23 +158,22 @@ As seen before the specification for a collection is done with
 the output type of the field. There are the following five types of
 functions:
 
--   `tib_scalar(ptype)`: a length one vector with type `ptype`
--   `tib_vector(ptype)`: a vector of arbitrary length with type `ptype`
--   `tib_variant()`: a vector of arbitrary length and type; you should
-    barely ever need this
--   `tib_row(...)`: an object with the fields `...`
--   `tib_df(...)`: a collection where the objects have the fields `...`
+- `tib_scalar(ptype)`: a length one vector with type `ptype`
+- `tib_vector(ptype)`: a vector of arbitrary length with type `ptype`
+- `tib_variant()`: a vector of arbitrary length and type; you should
+  barely ever need this
+- `tib_row(...)`: an object with the fields `...`
+- `tib_df(...)`: a collection where the objects have the fields `...`
 
 For convenience there are shortcuts for `tib_scalar()` and
 `tib_vector()` for the most common prototypes:
 
--   `logical()`: `tib_lgl()` and `tib_lgl_vec()`
--   `integer()`: `tib_int()` and `tib_int_vec()`
--   `double()`: `tib_dbl()` and `tib_dbl_vec()`
--   `character()`: `tib_chr()` and `tib_chr_vec()`
--   `Date`: `tib_date()` and `tib_date_vec()`
--   `Date` encoded as character: `tib_chr_date()` and
-    `tib_chr_date_vec()`
+- `logical()`: `tib_lgl()` and `tib_lgl_vec()`
+- `integer()`: `tib_int()` and `tib_int_vec()`
+- `double()`: `tib_dbl()` and `tib_dbl_vec()`
+- `character()`: `tib_chr()` and `tib_chr_vec()`
+- `Date`: `tib_date()` and `tib_date_vec()`
+- `Date` encoded as character: `tib_chr_date()` and `tib_chr_date_vec()`
 
 ### Scalar Elements
 
@@ -343,7 +341,7 @@ tibblify(gh_repos_small, spec)
 #>  8 67959624 cmark       gaborcsardi 660288 https://api.github.com/users/gaborcs…
 #>  9 63152619 conditions  gaborcsardi 660288 https://api.github.com/users/gaborcs…
 #> 10 24343686 crayon      gaborcsardi 660288 https://api.github.com/users/gaborcs…
-#> # … with 20 more rows
+#> # ℹ 20 more rows
 ```
 
 If you don’t like the tibble column you can unpack it with
@@ -379,7 +377,7 @@ tibblify(gh_repos_small, spec2)
 #>  8 67959624 cmark         660288 gaborcsardi
 #>  9 63152619 conditions    660288 gaborcsardi
 #> 10 24343686 crayon        660288 gaborcsardi
-#> # … with 20 more rows
+#> # ℹ 20 more rows
 ```
 
 ## Required and Optional Fields
@@ -500,17 +498,6 @@ api_output_list
 #>   <int>
 #> 1     1
 #> 2     2
-#> 
-#> attr(,"tib_spec")
-#> tspec_object(
-#>   tib_chr("status"),
-#>   tib_df(
-#>     "data",
-#>     tib_int("x"),
-#>   ),
-#> )attr(,"waldo_opts")
-#> attr(,"waldo_opts")$ignore_attr
-#> [1] "tib_spec"   "waldo_opts"
 ```
 
 Now accessing `data` does not required an extra subsetting step

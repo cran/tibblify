@@ -31,8 +31,10 @@
     Output
       <error/rlang_error>
       Error in `tspec_df()`:
+      ! In field 1.
+      Caused by error:
       ! `key` must be a single string to infer name.
-      x `key` of ..1 has length 2.
+      x `key` has length 2.
     Code
       (expect_error(tspec_df(y = tib_int("x"), tib_int("y"))))
     Output
@@ -235,7 +237,7 @@
     Output
       <error/rlang_error>
       Error in `tib_int()`:
-      ! Can't convert `transform`, an empty integer vector, to a function.
+      ! Can't convert `transform`, an integer vector, to a function.
 
 # tib_vector checks arguments
 

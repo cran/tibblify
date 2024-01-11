@@ -3,7 +3,6 @@
 #' @param x A nested list.
 #' @param spec A specification how to convert `x`. Generated with `tspec_row()`
 #'   or `tspec_df()`.
-#' @param names_to Deprecated. Use `tspec_df(.names_to)` instead.
 #' @param unspecified A string that describes what happens if the specification
 #'   contains unspecified fields. Can be one of
 #'   * `"error"`: Throw an error.
@@ -57,13 +56,8 @@
 #' out$children[[1]]$children[[2]]
 tibblify <- function(x,
                      spec = NULL,
-                     names_to = NULL,
                      unspecified = NULL) {
   withr::local_locale(c(LC_COLLATE = "C"))
-
-  if (!is.null(names_to)) {
-    lifecycle::deprecate_stop("0.2.0", "tibblify(names_to)")
-  }
 
   if (is_null(spec)) {
     spec <- guess_tspec(x, inform_unspecified = TRUE, call = current_call())
@@ -102,6 +96,7 @@ tibblify <- function(x,
 
   if (inherits(spec_org, "tspec_object")) {
     out <- purrr::map2(spec_org$fields, out, finalize_tspec_object)
+    class(out) <- "tibblify_object"
   }
 
   out <- set_spec(out, spec_org)
@@ -178,7 +173,7 @@ spec_prep <- function(spec) {
   if (type == "recursive") {
     spec$type <- "df"
     spec["names_col"] <- list(NULL)
-    spec$child_coll_pos <- which(purrr::map_chr(spec$fields, "type") == "recursive_helper") - 1L
+    spec$child_coll_pos <- which(compat_map_chr(spec$fields, "type") == "recursive_helper") - 1L
   }
 
   spec
@@ -252,7 +247,7 @@ prep_nested_keys2 <- function(spec, coll_locations) {
     vec_split(coll_locations[is_sub], first_keys[is_sub])$val
   )
 
-  first_keys <- purrr::map_chr(spec_out, list("key", 1))
+  first_keys <- compat_map_chr(spec_out, list("key", 1))
   key_order <- order(first_keys)
 
   list(

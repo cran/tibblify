@@ -14,12 +14,7 @@ guess_tspec_object <- function(x,
     )
     cli::cli_abort(msg, call = call)
   }
-
-  if (!is.list(x)) {
-    cls <- class(x)[[1]]
-    msg <- "{.arg x} must be a list. Instead, it is a {.cls {cls}}."
-    cli::cli_abort(msg, call = call)
-  }
+  check_list(x)
 
   check_object_names(x, call)
 
@@ -29,9 +24,14 @@ guess_tspec_object <- function(x,
 
   fields <- purrr::imap(
     x,
-    guess_object_field_spec,
-    empty_list_unspecified = empty_list_unspecified,
-    simplify_list = simplify_list
+    function(value, name) {
+      guess_object_field_spec(
+        value,
+        name,
+        empty_list_unspecified = empty_list_unspecified,
+        simplify_list = simplify_list
+      )
+    }
   )
 
   tspec_object(
@@ -44,11 +44,7 @@ guess_object_field_spec <- function(value,
                                     name,
                                     empty_list_unspecified,
                                     simplify_list) {
-  if (is_null(value)) {
-    return(tib_unspecified(name))
-  }
-
-  if (identical(value, list()) || identical(value, set_names(list()))) {
+  if (is_null(value) || identical(unname(value), list())) {
     return(tib_unspecified(name))
   }
 
@@ -80,14 +76,21 @@ guess_object_field_spec <- function(value,
     cli::cli_abort("{.fn tib_type_of} returned an unexpected type", .internal = TRUE) # nocov
   }
 
-  if (is_object_list(value)) {
-    spec <- guess_make_tib_df(
-      name,
-      values_flat = value,
-      required = TRUE,
-      empty_list_unspecified = empty_list_unspecified,
-      simplify_list = simplify_list
-    )
+  if (is_list_of_null(value)) {
+    return(tib_unspecified(name))
+  }
+
+  object_list <- is_object_list(value)
+  object <- is_object(value)
+  if (object_list && object) {
+    # TODO should ask user what to do
+  }
+
+  if (object_list) {
+    fields <- guess_object_list_spec(value, empty_list_unspecified, simplify_list)
+    names_to <- if (is_named(value) && !is_empty(value)) ".names"
+
+    spec <- tib_df(name, !!!fields, .names_to = names_to)
     return(spec)
   }
 
@@ -98,7 +101,7 @@ guess_object_field_spec <- function(value,
     }
   }
 
-  if (is_object(value)) {
+  if (object) {
     fields <- purrr::imap(
       value,
       guess_object_field_spec,
@@ -112,7 +115,6 @@ guess_object_field_spec <- function(value,
 }
 
 check_object_names <- function(x, call) {
-  # TODO should this be more strict and also expect names for an empty list?
   if (!is_named2(x)) {
     msg <- "{.arg x} must be fully named."
     cli::cli_abort(msg, call = call)

@@ -1,14 +1,17 @@
 #ifndef TIBBLIFY_H
 #define TIBBLIFY_H
 
-#define R_NO_REMAP
-#include <rlang.h>
-#include <R.h>
-#include <Rversion.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
-#include <stdbool.h>
+#include "tibblify-core.h"
+
+SEXP vec_unspecified(R_len_t n);
+bool vec_is_unspecified(SEXP x);
+
 #include "tibblify-vctrs.h"
+#include "vctrs-dim.h"
+#include "vctrs-utils.h"
+#include "vctrs-utils-dispatch.h"
 
 extern SEXP tibblify_ns_env;
 

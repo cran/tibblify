@@ -647,7 +647,7 @@ test_that("tib_df works", {
     row = list(a = 1, b = "b"),
     df = list(list(x = 1))
   )
-  spec <- tspec_object(
+  spec <- tspec_df(
     tib_df(
       "df",
       tib_int("atomic_scalar"),
@@ -659,16 +659,21 @@ test_that("tib_df works", {
     )
   )
 
+  # This also tests whether the ptypes are calculated correctly
   expect_equal(
-    tibblify(list(df = list(x)), spec),
-    list(
-      df = tibble(
-        atomic_scalar = 1L,
-        scalar = dtt,
-        vector = list_of(1:2),
-        variant = list(list(1L, "a")),
-        row = tibble(a = 1L, b = "b"),
-        df = list_of(tibble(x = 1L))
+    tibblify(list(list(df = list(x))), spec),
+    structure(
+      tibble(
+        df = list_of(
+          tibble(
+            atomic_scalar = 1L,
+            scalar = dtt,
+            vector = list_of(1:2),
+            variant = list(list(1L, "a")),
+            row = tibble(a = 1L, b = "b"),
+            df = list_of(tibble(x = 1L))
+          )
+        )
       )
     )
   )
@@ -852,7 +857,7 @@ test_that("does not confuse key order due to case - #96", {
   )
   expect_equal(
     tibblify::tibblify(list(B = 1), spec),
-    list(B = 1, a = NA_integer_)
+    structure(list(B = 1, a = NA_integer_), class = "tibblify_object")
   )
 })
 
@@ -902,7 +907,7 @@ test_that("discog works", {
       title = "Demo",
       formats = list_of(
         tibble(
-          # descriptions = list_of("Numbered"),
+          descriptions = list_of("Numbered"),
           text         = "Black",
           name         = "Cassette",
           qty          = "1"
@@ -916,7 +921,6 @@ test_that("discog works", {
     rating = 0L
   )
 
-  # TODO think about issue with "description"
   spec_collection <- tspec_df(
     tib_int("instance_id"),
     tib_chr("date_added"),
@@ -948,11 +952,11 @@ test_that("discog works", {
       tib_chr("title"),
       tib_df(
         "formats",
-        # tib_chr_vec(
-        #   "descriptions",
-        #   required = FALSE,
-        #   input_form = "scalar_list",
-        # ),
+        tib_chr_vec(
+          "descriptions",
+          required = FALSE,
+          input_form = "scalar_list",
+        ),
         tib_chr("text", required = FALSE),
         tib_chr("name"),
         tib_chr("qty"),
@@ -966,7 +970,10 @@ test_that("discog works", {
   )
 
   expect_equal(tibblify(discog[1], spec_collection), row1)
-  expect_equal(tibblify(row1, spec_collection), row1)
+  spec_collection2 <- spec_collection
+  spec_collection2$fields$basic_information$fields$formats$fields$descriptions <-
+    tib_chr_vec("descriptions", required = FALSE)
+  expect_equal(tibblify(row1, spec_collection2), row1)
 
   specs_object <- tspec_row(!!!spec_collection$fields)
   expect_equal(tibblify(discog[[1]], specs_object), row1)
@@ -983,7 +990,7 @@ test_that("tspec_object() works", {
   )
   expect_equal(
     tibblify(x, tspec_object(spec)),
-    list(a = 1L, b = 1:3)
+    structure(list(a = 1L, b = 1:3), class = "tibblify_object")
   )
 
   model <- lm(Sepal.Length ~ Sepal.Width, data = iris)
@@ -993,7 +1000,7 @@ test_that("tspec_object() works", {
       tspec_object(tib_variant("x"), tib_unspecified("y")),
       unspecified = "list"
     ),
-    list(x = model, y = NULL)
+    structure(list(x = model, y = NULL), class = "tibblify_object")
   )
 
   x2 <- list(
@@ -1028,12 +1035,15 @@ test_that("tspec_object() works", {
   )
   expect_equal(
     tibblify(x2, tspec_object(spec2)),
-    list(
-      a = list(
-        x = 1L,
-        y = list(a = 1L),
-        z = tibble(b = 1:2)
-      )
+    structure(
+      list(
+        a = list(
+          x = 1L,
+          y = list(a = 1L),
+          z = tibble(b = 1:2)
+        )
+      ),
+      class = "tibblify_object"
     )
   )
 
@@ -1049,7 +1059,7 @@ test_that("tspec_object() works", {
       list(a = "a", c = "c", b = list(a = "ba", b = "bb")),
       spec3
     ),
-    list(c = "c", bb = "bb", a = "a", ba = "ba")
+    structure(list(c = "c", bb = "bb", a = "a", ba = "ba"), class = "tibblify_object")
   )
 })
 
@@ -1494,7 +1504,7 @@ test_that("recursive: works", {
 
   expect_equal(
     tibblify(list(data = list(list(id = 1, name = "a"))), spec2),
-    list(data = expected)
+    structure(list(data = expected), class = "tibblify_object")
   )
 
   expect_equal(
@@ -1560,7 +1570,7 @@ test_that("recursive: works", {
   )
 
   expect_equal(tibblify(x, spec), expected)
-  expect_equal(tibblify(list(data = x), spec2), list(data = expected))
+  expect_equal(tibblify(list(data = x), spec2), structure(list(data = expected), class = "tibblify_object"))
 
   # tibble input
   expect_equal(tibblify(expected, spec), expected)

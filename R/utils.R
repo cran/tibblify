@@ -1,3 +1,28 @@
+check_list <- function(x,
+                       ...,
+                       allow_null = FALSE,
+                       arg = caller_arg(x),
+                       call = caller_env()) {
+  if (!missing(x)) {
+    if (vctrs::vec_is_list(x)) {
+      return(invisible(NULL))
+    }
+    if (allow_null && is_null(x)) {
+      return(invisible(NULL))
+    }
+  }
+
+  stop_input_type(
+    x,
+    c("a list"),
+    ...,
+    allow_na = FALSE,
+    allow_null = allow_null,
+    arg = arg,
+    call = call
+  )
+}
+
 check_arg_different <- function(arg,
                                 ...,
                                 arg_name = caller_arg(arg),
@@ -21,7 +46,7 @@ path_to_string <- function(path) {
     return("x")
   }
 
-  path_elements <- purrr::map_chr(
+  path_elements <- compat_map_chr(
     path_elts[1:depth],
     function(elt) {
       if (is.character(elt)) {
@@ -173,4 +198,21 @@ list_drop_null <- function(x) {
   }
 
   x
+}
+
+compat_map_chr <- function(x, .f, ...) {
+  purrr::map_vec(x, .f, ..., .ptype = character())
+}
+
+with_indexed_errors <- function(expr,
+                                message,
+                                error_call = caller_env(),
+                                env = caller_env()) {
+  try_fetch(
+    expr,
+    purrr_error_indexed = function(cnd) {
+      msg_env <- new_environment(list(cnd = cnd), parent = env)
+      cli::cli_abort(message, call = error_call, parent = cnd$parent, .envir = msg_env)
+    }
+  )
 }
