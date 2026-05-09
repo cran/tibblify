@@ -1,4 +1,25 @@
-# cannot combine different types of spec
+# nice error when combining non-specs (#65)
+
+    Code
+      (expect_error(tspec_combine(df_spec, tib_int("a"))))
+    Output
+      <error/rlang_error>
+      Error in `tspec_combine()`:
+      ! Every element of `...` must be a tibblify spec.
+      x Element 2 has class <tib_scalar_integer>.
+
+# nice error for unknown spec type (#65)
+
+    Code
+      (expect_error(tspec_combine(df_spec, df_spec)))
+    Output
+      <error/rlang_error>
+      Error in `tspec_combine()`:
+      ! Unknown spec type
+      i This is an internal error that was detected in the tibblify package.
+        Please report it at <https://github.com/wranglezone/tibblify/issues> with a reprex (<https://tidyverse.org/help/>) and the full backtrace.
+
+# cannot combine different types of spec (#65)
 
     Code
       (expect_error(tspec_combine(df_spec, row_spec)))
@@ -32,17 +53,21 @@
       Caused by error in `tspec_combine()`:
       ! Cannot combine tibs of different keys a and b
 
-# nice error when combining non-specs
+# nice error for unknown tib type (#65)
 
     Code
-      (expect_error(tspec_combine(df_spec, tib_int("a"))))
+      (expect_error(tspec_combine(df_spec, df_spec)))
     Output
-      <error/rlang_error>
-      Error in `check_tspec_combine_dots()`:
-      ! Every element of `...` must be a tibblify spec.
-      x Element 2 has class <tib_scalar_integer>.
+      <error/purrr_error_indexed>
+      Error in `map2()`:
+      i In index: 1.
+      i With name: a.
+      Caused by error in `tspec_combine()`:
+      ! Unknown tib type
+      i This is an internal error that was detected in the tibblify package.
+        Please report it at <https://github.com/wranglezone/tibblify/issues> with a reprex (<https://tidyverse.org/help/>) and the full backtrace.
 
-# can combine type
+# can combine type (#65)
 
     Code
       (expect_error(tspec_combine(tspec_row, spec_scalar)))
@@ -90,7 +115,7 @@
       Caused by error in `tspec_combine()`:
       ! Can't combine tibs `..1` <df> and `..2` <vector>
 
-# can combine ptype
+# can combine ptype (#65)
 
     Code
       (expect_error(tspec_combine(spec_int, spec_chr)))
@@ -102,7 +127,7 @@
       Caused by error in `tspec_combine()`:
       ! Can't combine tibs with ptype ..1 <integer> and ..2 <character>.
 
-# can't combine different defaults
+# can't combine different defaults (#65)
 
     Code
       (expect_error(tspec_combine(spec_no_default, spec_default1)))
@@ -144,7 +169,7 @@
       Caused by error in `tspec_combine()`:
       ! Cannot combine fill 1 and 2
 
-# can't combine different transforms
+# can't combine different transforms (#65)
 
     Code
       (expect_error(tspec_combine(spec_no_f, spec_f1)))

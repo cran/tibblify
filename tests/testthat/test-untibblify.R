@@ -1,28 +1,26 @@
-test_that("can untibblify a scalar column", {
+test_that("can untibblify a scalar column (#49)", {
   expect_equal(
     untibblify(tibble(x = 1:2)),
     list(list(x = 1), list(x = 2))
   )
-
   expect_equal(
     untibblify(tibble(x = new_rational(1, 1:2))),
     list(list(x = new_rational(1, 1)), list(x = new_rational(1, 2)))
   )
 })
 
-test_that("can untibblify a vector column", {
+test_that("can untibblify a vector column (#49)", {
   expect_equal(
     untibblify(tibble(x = list(NULL, 1:3))),
     list(list(x = NULL), list(x = 1:3))
   )
 })
 
-test_that("can untibblify a list column", {
+test_that("can untibblify a list column (#49)", {
   expect_equal(
     untibblify(tibble(x = list("a", 1))),
     list(list(x = "a"), list(x = 1))
   )
-
   model <- lm(Sepal.Length ~ Sepal.Width, data = iris)
   expect_equal(
     untibblify(tibble(x = list(model, 1))),
@@ -30,7 +28,7 @@ test_that("can untibblify a list column", {
   )
 })
 
-test_that("can untibblify a tibble column", {
+test_that("can untibblify a tibble column (#49)", {
   x <- tibble(
     x = tibble(
       int = 1:2,
@@ -38,25 +36,16 @@ test_that("can untibblify a tibble column", {
       df = tibble(chr = c("a", "b"))
     )
   )
-
   expect_equal(
     untibblify(x),
     list(
-      list(x = list(
-        int = 1L,
-        chr_vec = "a",
-        df = list(chr = "a")
-      )),
-      list(x = list(
-        int = 2L,
-        chr_vec = NULL,
-        df = list(chr = "b")
-      ))
+      list(x = list(int = 1L, chr_vec = "a", df = list(chr = "a"))),
+      list(x = list(int = 2L, chr_vec = NULL, df = list(chr = "b")))
     )
   )
 })
 
-test_that("can untibblify a list of tibble column", {
+test_that("can untibblify a list of tibble column (#49)", {
   x <- tibble(
     x = list(
       tibble(
@@ -71,7 +60,6 @@ test_that("can untibblify a list of tibble column", {
       )
     )
   )
-
   expect_equal(
     untibblify(x),
     list(
@@ -82,15 +70,13 @@ test_that("can untibblify a list of tibble column", {
         )
       ),
       list(
-        x = list(
-          list(int = 3L, chr_vec = "c", df = list(chr = NA_character_))
-        )
+        x = list(list(int = 3L, chr_vec = "c", df = list(chr = NA_character_)))
       )
     )
   )
 })
 
-test_that("can rename according to tspec_df", {
+test_that("can rename according to tspec_df (#49)", {
   spec <- tspec_df(
     x2 = tib_df(
       "x",
@@ -102,7 +88,6 @@ test_that("can rename according to tspec_df", {
       )
     )
   )
-
   x_tibbed <- tibble(
     x2 = list(
       tibble(
@@ -117,7 +102,6 @@ test_that("can rename according to tspec_df", {
       )
     )
   )
-
   expect_equal(
     untibblify(x_tibbed, spec),
     list(
@@ -128,17 +112,14 @@ test_that("can rename according to tspec_df", {
         )
       ),
       list(
-        x = list(
-          list(int = 3L, chr_vec = "c", df = list(chr = NA_character_))
-        )
+        x = list(list(int = 3L, chr_vec = "c", df = list(chr = NA_character_)))
       )
     )
   )
 })
 
-test_that("can untibblify object", {
+test_that("can untibblify object (#49)", {
   model <- lm(Sepal.Length ~ Sepal.Width, data = iris)
-
   expect_equal(
     untibblify(
       list(
@@ -152,39 +133,64 @@ test_that("can untibblify object", {
       int = 1,
       chr_vec = c("a", "b"),
       model = model,
-      df = list(
-        list(x = 1, y = TRUE),
-        list(x = 2, y = FALSE)
-      )
+      df = list(list(x = 1, y = TRUE), list(x = 2, y = FALSE))
     )
   )
 })
 
-test_that("can rename according to spec", {
+test_that("can rename according to spec (#49)", {
   expect_equal(
     untibblify(list(x = 1), tspec_object(x = tib_int("a"))),
     list(a = 1)
   )
-
   x <- list(x = list(a = 1, b = 2))
   spec <- tspec_object(
-    x2 = tib_row(
-      "x",
-      a2 = tib_dbl("a"),
-      b2 = tib_dbl("b")
-    )
+    x2 = tib_row("x", a2 = tib_dbl("a"), b2 = tib_dbl("b"))
   )
   x_tibbed <- list(x2 = list(a2 = 1, b2 = 2))
-
-  expect_equal(
-    untibblify(x_tibbed, spec),
-    x
-  )
+  expect_equal(untibblify(x_tibbed, spec), x)
 })
 
-test_that("checks input", {
+test_that("untibblify uses tib_spec attribute when no spec provided (#235)", {
+  input <- list(list(x = 1, y = "a"), list(x = 2, y = "b"))
+  spec <- tspec_df(x2 = tib_int("x"), y2 = tib_chr("y"))
+  tibbed <- tibblify(input, spec)
+  expect_equal(untibblify(tibbed), input)
+})
+
+test_that(".apply_spec_renaming() errors on nested key", {
+  spec <- structure(
+    list(
+      fields = list(
+        x = structure(list(key = c("a", "b")), class = "tib_collector")
+      )
+    ),
+    class = "tspec_df"
+  )
+  expect_snapshot({
+    (expect_error(untibblify(tibble(x = 1), spec)))
+  })
+})
+
+test_that(".apply_spec_renaming() errors on non-character key", {
+  spec <- structure(
+    list(fields = list(x = structure(list(key = 1L), class = "tib_collector"))),
+    class = "tspec_df"
+  )
+  expect_snapshot({
+    (expect_error(untibblify(tibble(x = 1), spec)))
+  })
+})
+
+test_that("untibblify checks input (#49)", {
   expect_snapshot({
     (expect_error(untibblify(1:3)))
     (expect_error(untibblify(new_rational(1, 1:3))))
+  })
+})
+
+test_that(".check_key_length_1() errors on zero-length key", {
+  expect_snapshot({
+    (expect_error(.check_key_length_1(key = character(0))))
   })
 })

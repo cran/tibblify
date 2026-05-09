@@ -4,15 +4,34 @@
 #include "Path.h"
 #include "utils.h"
 #include "tibblify.h"
+#include "r-vctrs.h"
+
+/**
+ * @file add-value.c
+ * @brief Collector value/default writers used by tibblify parsing.
+ *
+ * This file implements the low-level "add a value into a collector" machinery.
+ * Parsing code assigns collector function pointers from this module, then calls
+ * them recursively while walking nested input data. Implementations are split
+ * between row-major and col-major paths.
+ */
 
 void add_stop_required(struct collector* v_collector, struct Path* v_path) {
   stop_required(v_path->data);
-}
+} // # nocov
 
+/**
+ * Write a collector's configured default value for primitive collectors whose
+ * backing storage is a contiguous C array (`lgl`, `int`, `dbl`).
+ */
 #define ADD_DEFAULT(COLL)                                                      \
   *v_collector->details.COLL.v_data = v_collector->details.COLL.default_value; \
   ++v_collector->details.COLL.v_data;
 
+/**
+ * Write a collector's default value via an R-level setter for collectors that
+ * store values in list/character vectors and therefore require write barriers.
+ */
 #define ADD_DEFAULT_BARRIER(COLL, SET)                             \
   r_obj* default_value = v_collector->details.COLL.default_value;  \
   SET(v_collector->data, v_collector->current_row, default_value); \
@@ -46,6 +65,10 @@ void add_default_variant(struct collector* v_collector, struct Path* v_path) {
   ADD_DEFAULT_BARRIER(variant_coll, r_list_poke);
 }
 
+/**
+ * Apply a default-operation callback to each child collector in a multi/row
+ * collector, updating `v_path` to the child key during traversal.
+ */
 #define CHILDREN_ADD_DEFAULT(F_DEFAULT)                                       \
   struct multi_collector* coll = &v_collector->details.multi_coll;            \
   struct collector* v_collectors = coll->collectors;                          \
@@ -85,6 +108,12 @@ void add_default_recursive(struct collector* v_collector, struct Path* v_path) {
 
 // -----------------------------------------------------------------------------
 
+/**
+ * Add a scalar value into primitive collector storage.
+ *
+ * `NULL` maps to type-appropriate missing value, non-`NULL` input is cast to
+ * the collector prototype and validated to size 1.
+ */
 #define ADD_VALUE(COLL, NA, EMPTY, CAST)                       \
   if (value == r_null) {                                       \
     *v_collector->details.COLL.v_data = NA;                    \
@@ -92,7 +121,7 @@ void add_default_recursive(struct collector* v_collector, struct Path* v_path) {
     return;                                                    \
   }                                                            \
                                                                \
-  r_obj* value_casted = KEEP(vec_cast(value, EMPTY));          \
+  r_obj* value_casted = KEEP(rvctrs_vec_cast(value, EMPTY));          \
   r_ssize size = short_vec_size(value_casted);                 \
   if (size != 1) {                                             \
     stop_scalar(size, v_path->data);                            \
@@ -102,6 +131,9 @@ void add_default_recursive(struct collector* v_collector, struct Path* v_path) {
   ++v_collector->details.COLL.v_data;                          \
   FREE(1);
 
+/**
+ * Add a scalar value for collectors that write through R API setters.
+ */
 #define ADD_VALUE_BARRIER(SET, NA, PTYPE, GET)                 \
   if (value == r_null) {                                       \
     SET(v_collector->data, v_collector->current_row, NA);      \
@@ -109,7 +141,7 @@ void add_default_recursive(struct collector* v_collector, struct Path* v_path) {
     return;                                                    \
   }                                                            \
                                                                \
-  r_obj* value_casted = KEEP(vec_cast(value, PTYPE));          \
+  r_obj* value_casted = KEEP(rvctrs_vec_cast(value, PTYPE));          \
   r_ssize size = short_vec_size(value_casted);                 \
   if (size != 1) {                                             \
     stop_scalar(size, v_path->data);                           \
@@ -145,7 +177,7 @@ void add_value_scalar(struct collector* v_collector, r_obj* value, struct Path* 
     return;
   }
 
-  r_obj* value_casted = KEEP(vec_cast(value, v_collector->details.scalar_coll.ptype_inner));
+  r_obj* value_casted = KEEP(rvctrs_vec_cast(value, v_collector->details.scalar_coll.ptype_inner));
   r_ssize size = short_vec_size(value_casted);
   if (size != 1) {
     stop_scalar(size, v_path->data);
@@ -160,8 +192,11 @@ void add_value_scalar(struct collector* v_collector, r_obj* value, struct Path* 
 // must be protected in the shelter.
 // For scalars the `data` field is not allocated to avoid unnecessary memory
 // consumption.
+/**
+ * Replace collector storage with a casted col-major input vector.
+ */
 #define ADD_VALUE_COLMAJOR(PTYPE)                              \
-  v_collector->data = KEEP(vec_cast(value, PTYPE));            \
+  v_collector->data = KEEP(rvctrs_vec_cast(value, PTYPE));            \
   r_list_poke(v_collector->shelter, 0, v_collector->data);     \
   FREE(1);
 
@@ -185,11 +220,24 @@ void add_value_scalar_colmajor(struct collector* v_collector, r_obj* value, stru
   ADD_VALUE_COLMAJOR(v_collector->details.scalar_coll.ptype_inner);
 }
 
+/**
+ * Normalize list-like vector input before `list_unchop()`.
+ *
+ * For vector collectors in `scalar_list`/`object` input forms, elements must
+ * each be size 1. `NULL` elements are replaced with `na` to preserve size.
+ *
+ * @param value List input to normalize before unchopping.
+ * @param input_form Declared vector input form used for validation errors.
+ * @param ptype Prototype passed to `vec_unchop()`.
+ * @param na Replacement element used for `NULL` entries.
+ * @param v_path Mutable path tracker used for diagnostics.
+ * @return Unchopped vector/list-casted output matching `ptype`.
+ */
 r_obj* list_unchop_value(r_obj* value,
-                        enum vector_form input_form,
-                        r_obj* ptype,
-                        r_obj* na,
-                        struct Path* v_path) {
+                         enum vector_form input_form,
+                         r_obj* ptype,
+                         r_obj* na,
+                         struct Path* v_path) {
   // FIXME if `vec_assign()` gets exported this should use
   // `vec_init()` + `vec_assign()`
   r_ssize n = r_length(value);
@@ -204,13 +252,13 @@ r_obj* list_unchop_value(r_obj* value,
       break;
     }
 
-    if (vec_size(*v_value) != 1) {
+    if (short_vec_size(*v_value) != 1) {
       stop_vector_wrong_size_element(v_path->data, input_form, value);
     }
   }
 
   if (loc_first_null == -1) {
-    return(vec_flatten(value, ptype));
+    return(rvctrs_list_unchop(value, ptype));
   }
 
   // Theoretically a shallow duplicate should be more efficient but in
@@ -222,12 +270,12 @@ r_obj* list_unchop_value(r_obj* value,
       continue;
     }
 
-    if (vec_size(*v_value) != 1) {
+    if (short_vec_size(*v_value) != 1) {
       stop_vector_wrong_size_element(v_path->data, input_form, value);
     }
   }
 
-  r_obj* out = vec_flatten(out_list, ptype);
+  r_obj* out = rvctrs_list_unchop(out_list, ptype);
   FREE(1);
   return out;
 }
@@ -270,7 +318,7 @@ void add_value_vector(struct collector* v_collector, r_obj* value, struct Path* 
   if (v_vec_coll->elt_transform != r_null) value = apply_transform(value, v_vec_coll->elt_transform);
   KEEP(value);
 
-  r_obj* value_casted = KEEP(vec_cast(value, v_collector->ptype));
+  r_obj* value_casted = KEEP(rvctrs_vec_cast(value, v_collector->ptype));
   r_obj* value_prepped = KEEP(v_vec_coll->prep_data(value_casted, names, v_vec_coll->col_names));
 
   r_list_poke(v_collector->data, v_collector->current_row, value_prepped);
@@ -316,6 +364,17 @@ void add_value_variant_colmajor(struct collector* v_collector, r_obj* value, str
   }
 }
 
+/**
+ * Refresh field-to-spec matching state for a row/object collector.
+ *
+ * This computes the key match indices and field order only when field names
+ * differ from the previous row.
+ *
+ * @param v_collector Multi collector whose field match cache is updated.
+ * @param field_names Field names from the current row/object.
+ * @param n_fields Number of fields in `field_names`.
+ * @param v_path Mutable path tracker used for duplicate-name diagnostics.
+ */
 void update_fields(struct collector* v_collector,
                    r_obj* field_names,
                    const int n_fields,
@@ -481,13 +540,24 @@ void add_value_recursive_colmajor(struct collector* v_collector, r_obj* value, s
   }
 }
 
+/**
+ * Parse a row-major value into a row collector and finalize to output.
+ *
+ * For data-frame inputs, columns are processed through col-major row handlers.
+ * For list inputs, rows are iterated while updating the path with row indices.
+ *
+ * @param v_collector Parser/collector configured from the spec.
+ * @param value Row-major payload (list or data frame) to parse.
+ * @param v_path Mutable path tracker used for diagnostics.
+ * @return Parsed row-major result after finalization.
+ */
 r_obj* parse(struct collector* v_collector,
              r_obj* value,
              struct Path* v_path) {
   r_ssize n_rows = short_vec_size(value);
   alloc_row_collector(v_collector, n_rows);
 
-  if (is_data_frame(value)) {
+  if (r_is_data_frame(value)) {
     add_value_row_colmajor(v_collector, value, v_path);
   } else {
     check_list(value, v_path);
@@ -511,6 +581,17 @@ r_obj* parse(struct collector* v_collector,
   return out;
 }
 
+/**
+ * Parse a col-major object using the current collector parser.
+ *
+ * Row count is inferred from child collectors, storage is allocated once, then
+ * col-major add-value handlers populate data before row finalization.
+ *
+ * @param v_collector Parser/collector configured from the spec.
+ * @param value Col-major payload to parse.
+ * @param v_path Mutable path tracker used for diagnostics.
+ * @return Parsed col-major result after finalization.
+ */
 r_obj* parse_colmajor(struct collector* v_collector,
                       r_obj* value,
                       struct Path* v_path) {

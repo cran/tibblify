@@ -1,19 +1,18 @@
+#include "tibblify.h"
 #include "utils.h"
 #include "conditions.h"
+#include "r-vctrs.h"
 
 SEXP tibblify_ns_env = NULL;
-
 SEXP classes_list_of = NULL;
 
-SEXP strings_empty = NULL;
-
-SEXP syms_ptype = NULL;
 SEXP syms_transform = NULL;
 SEXP syms_value = NULL;
 SEXP syms_x = NULL;
+SEXP syms_ptype = NULL;
 
-SEXP syms_vec_is = NULL;
-SEXP syms_vec_flatten = NULL;
+SEXP strings_empty = NULL;
+SEXP strings_object = NULL;
 
 // -----------------------------------------------------------------------------
 
@@ -32,12 +31,11 @@ r_obj* r_list_get_by_name(r_obj* x, const char* nm) {
 }
 
 r_obj* apply_transform(r_obj* value, r_obj* fn) {
-  // from https://github.com/r-lib/vctrs/blob/9b65e090da2a0f749c433c698a15d4e259422542/src/names.c#L83
   r_obj* call = KEEP(r_call2(syms_transform, syms_value));
 
   r_obj* mask = KEEP(r_alloc_environment(2, R_GlobalEnv));
-  r_env_poke(mask, syms_transform, fn);
-  r_env_poke(mask, syms_value, value);
+  r_env_bind(mask, syms_transform, fn);
+  r_env_bind(mask, syms_value, value);
   r_obj* out = KEEP(r_eval(call, mask));
 
   FREE(3);
@@ -48,7 +46,6 @@ void match_chr(r_obj* needles_sorted,
                r_obj* haystack,
                int* indices,
                const r_ssize n_haystack) {
-  // CAREFUL: this assumes needles to be sorted!
   r_obj* const * v_needles = r_chr_cbegin(needles_sorted);
   r_obj* const * v_haystack = r_chr_cbegin(haystack);
 
@@ -70,9 +67,7 @@ void match_chr(r_obj* needles_sorted,
 
     const char* needle_char = r_str_c_string(*v_needles);
     const char* hay_char = r_str_c_string(hay);
-    // needle is too small, so go to next needle
     if (strcmp(needle_char, hay_char) < 0) {
-      // needle not found in haystack
       indices[i_needle] = -1;
       ++v_needles; ++i_needle;
     } else {
@@ -80,28 +75,21 @@ void match_chr(r_obj* needles_sorted,
     }
   }
 
-  // mark remaining needles as not found
   for (; i_needle < n_needles; ++i_needle) {
     indices[i_needle] = -1;
   }
-
-  return;
 }
 
 bool chr_equal(r_obj* x, r_obj* y) {
   int n_x = r_length(x);
   int n_y = r_length(y);
-  if (n_x != n_y) {
-    return false;
-  }
+  if (n_x != n_y) return false;
 
   r_obj* const * v_x = r_chr_cbegin(x);
   r_obj* const * v_y = r_chr_cbegin(y);
 
   for (int i = 0; i < n_x; ++i, ++v_x, ++v_y) {
-    if (*v_x != *v_y) {
-      return false;
-    }
+    if (*v_x != *v_y) return false;
   }
 
   return true;
@@ -115,6 +103,7 @@ void check_names_unique(r_obj* field_names,
 
   r_obj* const * v_field_names = r_chr_cbegin(field_names);
   r_obj* field_nm = v_field_names[ind[0]];
+
   if (field_nm == r_globals.na_str || field_nm == strings_empty) {
     stop_empty_name(path->data, ind[0]);
   }
@@ -125,23 +114,17 @@ void check_names_unique(r_obj* field_names,
     if (field_nm == field_nm_prev) stop_duplicate_name(path->data, field_nm);
 
     if (field_nm == r_globals.na_str || field_nm == strings_empty) {
-      stop_empty_name(path->data, ind[field_index]);
+      stop_empty_name(path->data, ind[field_index]); // # nocov
     }
   }
-}
-
-// -----------------------------------------------------------------------------
-
-r_obj* r_new_shared_vector(SEXPTYPE type, R_len_t n) {
-  r_obj* out = Rf_allocVector(type, n);
-  R_PreserveObject(out);
-  MARK_NOT_MUTABLE(out);
-  return out;
 }
 
 // [[register()]]
 void tibblify_init_utils(SEXP ns) {
   tibblify_ns_env = ns;
+
+  r_preserve_global(strings_empty = r_str(""));
+  r_preserve_global(strings_object = r_str("object"));
 
   r_preserve_global(r_string_input_form.rowmajor = r_str("rowmajor"));
   r_preserve_global(r_string_input_form.colmajor = r_str("colmajor"));
@@ -158,7 +141,9 @@ void tibblify_init_utils(SEXP ns) {
   r_preserve_global(r_vector_form.scalar_list = r_str("scalar_list"));
   r_preserve_global(r_vector_form.object_list = r_str("object"));
 
-  classes_list_of = r_new_shared_vector(STRSXP, 3);
+  classes_list_of = Rf_allocVector(STRSXP, 3);
+  r_preserve_global(classes_list_of);
+
   r_obj* strings_list_of = r_str("vctrs_list_of");
   r_chr_poke(classes_list_of, 0, strings_list_of);
   r_obj* strings_vctr = r_str("vctrs_vctr");
@@ -166,19 +151,8 @@ void tibblify_init_utils(SEXP ns) {
   r_obj* strings_list = r_str("list");
   r_chr_poke(classes_list_of, 2, strings_list);
 
-  r_preserve_global(strings_empty = r_str(""));
-
-  syms_ptype = r_sym("ptype");
   syms_transform = r_sym("transform");
   syms_value = r_sym("value");
   syms_x = r_sym("x");
-
-  r_obj* vctrs_package = KEEP(r_env_find(R_NamespaceRegistry, r_sym("vctrs")));
-  syms_vec_is = Rf_findFun(r_sym("vec_is"), vctrs_package);
-
-  r_obj* tibblify_symbol = r_sym("tibblify");
-  r_obj* tibblify_package = KEEP(r_env_find(R_NamespaceRegistry, tibblify_symbol));
-  syms_vec_flatten = Rf_findFun(r_sym("vec_flatten"), tibblify_package);
-
-  FREE(2);
+  syms_ptype = r_sym("ptype");
 }

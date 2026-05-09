@@ -4,12 +4,25 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-## ----setup--------------------------------------------------------------------
+## ----packages-used------------------------------------------------------------
+library(tibblify)
+library(purrr)
+library(repurrrsive)
+library(vctrs)
 
 ## -----------------------------------------------------------------------------
-library(tibblify)
-
-gh_users_small <- purrr::map(gh_users, ~ .x[c("followers", "login", "url", "name", "location", "email", "public_gists")])
+gh_users_small <- purrr::map(
+  repurrrsive::gh_users,
+  ~ .x[c(
+    "followers",
+    "login",
+    "url",
+    "name",
+    "location",
+    "email",
+    "public_gists"
+  )]
+)
 
 names(gh_users_small[[1]])
 
@@ -52,7 +65,7 @@ tibblify(
   x,
   tspec_df(
     tib_int("id"),
-    tib_scalar("duration", ptype = vctrs::new_duration())
+    tib_scalar("duration", .ptype = vctrs::new_duration())
   )
 )
 
@@ -72,7 +85,10 @@ tibblify(
 )
 
 ## -----------------------------------------------------------------------------
-gh_repos_small <- purrr::map(gh_repos, ~ .x[c("id", "name", "owner")])
+gh_repos_small <- purrr::map(
+  repurrrsive::gh_repos[[1]], 
+  ~ .x[c("id", "name", "owner")]
+)
 gh_repos_small <- purrr::map(
   gh_repos_small,
   function(repo) {
@@ -94,14 +110,15 @@ tibblify(gh_repos_small, spec)
 spec2 <- tspec_df(
   id = tib_int("id"),
   name = tib_chr("name"),
-  owner_id = tib_int(c("owner", "id")),
-  owner_login = tib_chr(c("owner", "login"))
+  owner_id = tib_int(c("owner", "id")), # "id" in "owner"
+  owner_login = tib_chr(c("owner", "login")) # "login" in "owner"
 )
 spec2
 
 tibblify(gh_repos_small, spec2)
 
 ## ----error=TRUE---------------------------------------------------------------
+try({
 x <- list(
   list(x = 1, y = "a"),
   list(x = 2)
@@ -113,11 +130,12 @@ spec <- tspec_df(
 )
 
 tibblify(x, spec)
+})
 
 ## -----------------------------------------------------------------------------
 spec <- tspec_df(
   x = tib_int("x"),
-  y = tib_chr("y", required = FALSE)
+  y = tib_chr("y", .required = FALSE)
 )
 
 tibblify(x, spec)
@@ -125,7 +143,7 @@ tibblify(x, spec)
 ## -----------------------------------------------------------------------------
 spec <- tspec_df(
   x = tib_int("x"),
-  y = tib_chr("y", required = FALSE, fill = "missing")
+  y = tib_chr("y", .required = FALSE, .fill = "missing")
 )
 
 tibblify(x, spec)
@@ -165,5 +183,5 @@ api_output_list <- tibblify(api_output, object_spec)
 api_output_list
 
 ## -----------------------------------------------------------------------------
-api_output_list$data
+api_output_list$data # No [[1]] needed
 

@@ -1,11 +1,18 @@
 # nocov start
 
 .onLoad <- function(libname, pkgname) {
-  # Load vctrs namespace for access to C callables
-  requireNamespace("vctrs", quietly = TRUE)
+  # Load vctrs explicitly to ensure it's available
+  vctrs_ns <- loadNamespace("vctrs")
 
-  # Initialize tibblify C globals
-  .Call(tibblify_initialize, ns_env("tibblify"))
+  # Pass BOTH namespaces to the C initializer
+  .Call(tibblify_initialize, rlang::ns_env("tibblify"), vctrs_ns)
+
+  if (rlang::is_installed("memoise")) {
+    .parse_schema_memoised <<- memoise::memoise(
+      .parse_schema,
+      omit_args = "openapi_spec"
+    )
+  }
 }
 
 # nocov end

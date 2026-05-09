@@ -1,0 +1,173 @@
+# .shared-params ----
+
+#' Shared parameters
+#'
+#' These parameters are used in multiple functions. They are defined here to
+#' make them easier to import and to find.
+#'
+#' @param allow_null (`logical(1)`) Whether `NULL` is accepted.
+#' @param arg (`character(1)`) An argument name. This name will be mentioned in
+#'   error messages as the input that is at the origin of a problem.
+#' @param .call (`environment`) The environment to use for error messages.
+#' @param .children (`character(1)`) The name of the field that contains the
+#'   children.
+#' @param .children_to (`character(1)`) The column name in which to store the
+#'   children.
+#' @param col (`any`) A column from a data frame, which may be a vector, a list,
+#'   or a nested data frame.
+#' @param col_name (`character(1)`) The name of the column.
+#' @param elt (`character` or `integer`) An element of a path.
+#' @param .elt_transform (`function` or `NULL`) A function to apply to each
+#'   element before casting to `.ptype_inner`.
+#' @param empty_list_unspecified (`logical(1)`) Treat empty lists as
+#'   unspecified?
+#' @param env (`environment`) The environment used to evaluate glue fields in
+#'   `message`.
+#' @param .error_call (`environment`) The environment to use for error messages.
+#' @param expr (`any`) An expression to evaluate and return, with indexed errors
+#'   wrapped.
+#' @param f_name (`character(1)`) The (possibly ANSI-colored) function name.
+#' @param field_spec (`tib_collector`) A tibblify field collector.
+#' @param file (`character(1)`) A path to a file, a connection, or literal data.
+#' @param .fill (`vector` or `NULL`) Optionally, a value to use if the field
+#'   does not exist. Note: this value must match the `.ptype_inner` of the field
+#'   (the value *before* any transformation), not the `.ptype`.
+#' @param force_names (`logical(1)`) Should names be printed even if they can be
+#'   deduced from the spec?
+#' @param .format (`character(1)` or `NULL`) Passed to the `format` argument of
+#'   [as.Date()].
+#' @param header_objects (`list`) A named list of header objects from an OpenAPI
+#'   spec.
+#' @param id_col (`character(1)`, `integer(1)`, or `symbol`) The column that
+#'   uniquely identifies each observation.
+#' @param id_col_name (`character(1)`) The name of the column that uniquely
+#'   identifies each observation.
+#' @param index (`integer(1)`) A zero-based location in a path.
+#' @param inform_unspecified (`logical(1)`) Inform about fields whose type could
+#'   not be determined?
+#' @param input_form (`character(1)`) The input form string used in error
+#'   messages.
+#' @param .key (`character`) The path of names to the field in the object.
+#' @param local_env (`environment`) A local environment used to track state
+#'   across recursive calls, such as whether empty lists were encountered.
+#' @param media_type_object (`list`) A single media type object from an OpenAPI
+#'   spec.
+#' @param media_type_objects (`list`) A named list of media type objects from an
+#'   OpenAPI spec.
+#' @param message (`character`) A cli message template.
+#' @param multi_line (`logical(1)`) Should the output be formatted across
+#'   multiple lines? For example, should each element of even a short list be
+#'   displayed on its own line?
+#' @param name (`character(1)`) The name of the field.
+#' @param name_spec (`character(1)`, `function`, or `NULL`) Name specification
+#'   passed to [vctrs::list_unchop()].
+#' @param names (`logical(1)`) Should names be printed even if they can be
+#'   deduced from the spec?
+#' @param nchar_indent (`integer(1)`) The number of (additional) characters that
+#'   will be used to indent the output when `multi_line = TRUE`. Primarily for
+#'   internal use when formatting is applied recursively.
+#' @param openapi_spec (`list`) A parsed OpenAPI specification.
+#' @param operation_object (`list`) An operation object from an OpenAPI spec, as
+#'   defined in the [Operation
+#'   Object](https://spec.openapis.org/oas/v3.1.0#operation-object).
+#' @param parameters (`list` or `NULL`) A list of parameter objects from an
+#'   OpenAPI spec, as defined in the [Parameter
+#'   Object](https://spec.openapis.org/oas/v3.1.0#parameter-object).
+#' @param parent_col (`character(1)`, `integer(1)`, or `symbol`) The column that
+#'   identifies the parent id of each observation. Each value must either be
+#'   missing (for the root elements) or appear in the `id_col` column.
+#' @param path (`list`) A path object encoded as a depth and a list of path
+#'   elements.
+#' @param path_exp (`list`) The path of the field used as the reference in size
+#'   mismatch errors.
+#' @param path_item_object (`list`) A path item object from an OpenAPI spec, as
+#'   defined in the [Path Item
+#'   Object](https://spec.openapis.org/oas/v3.1.0#path-item-object).
+#' @param .ptype (`vector(0)`) A prototype of the desired output type of the
+#'   field.
+#' @param .ptype_inner (`vector(0)`) A prototype of the input field.
+#' @param request_body (`list` or `NULL`) A request body object from an OpenAPI
+#'   spec, as defined in the [Request Body
+#'   Object](https://spec.openapis.org/oas/v3.1.0#request-body-object).
+#' @param .required (`logical(1)`) Throw an error if the field does not exist?
+#' @param response_object (`list`) A response object from an OpenAPI spec, as
+#'   defined in the [Response
+#'   Object](https://spec.openapis.org/oas/v3.1.0#response-object).
+#' @param responses_object (`list`) A responses object from an OpenAPI spec,
+#'   mapping status codes to response objects, as defined in the [Responses
+#'   Object](https://spec.openapis.org/oas/v3.1.0#responses-object).
+#' @param schema (`list`) A JSON schema object, as defined in the [Schema
+#'   Object](https://spec.openapis.org/oas/v3.1.0#schema-object), typically from
+#'   `openapi_spec$components$schemas` or inline within the spec.
+#' @param simplify_list (`logical(1)`) Should scalar lists be simplified to
+#'   vectors?
+#' @param size_act (`integer(1)`) The observed size of a field.
+#' @param size_exp (`integer(1)`) The expected size of a field.
+#' @param spec (`tspec` or `NULL`) A spec object describing the structure of
+#'   `x`.
+#' @param spec_list (`list`) A list of specifications.
+#' @param tib_list (`list`) A list of tib fields.
+#' @param .transform (`function` or `NULL`) A function to apply to the whole
+#'   vector after casting to `.ptype_inner`.
+#' @param value (`list`) An object list whose fields will be guessed.
+#' @param .values_to (`character(1)` or `NULL`) For `NULL` (the default), the
+#'   field is converted to a `.ptype` vector. If a string is provided, the field
+#'   is converted to a tibble and the values go into the specified column.
+#' @param width (`integer(1)`) The width (in number of characters) of text
+#'   output to generate.
+#' @param x (`any`) The object to check.
+#' @param x_arg (`character(1)`) The name of the x argument. This name will be
+#'   mentioned in error messages as the input that is at the origin of a
+#'   problem.
+#'
+#' @name .shared-params
+#' @keywords internal
+NULL
+
+# .shared-params-tib ----
+
+#' Shared tib_spec parameters
+#'
+#' These parameters are used in multiple `tib_*()` functions. They are defined
+#' here to make them easier to import and to find, and to make sure the
+#' deprecated forms get documented identically when these definitions are
+#' imported. This break-out is for parameters that differ between `tib_*()`
+#' functions and other functions that use the same parameters.
+#'
+#' @param .input_form (`character(1)`) The structure of the input field. Can be
+#'   one of:
+#'   * `"vector"`: The field is a vector, e.g. `c(1, 2, 3)`.
+#'   * `"scalar_list"`: The field is a list of scalars, e.g. `list(1, 2, 3)`.
+#'   * `"object"`: The field is a named list of scalars, e.g.
+#'   `list(a = 1, b = 2, c = 3)`.
+#' @param .names_to (`character(1)` or `NULL`) What to do with the inner names
+#'   of the object. Can be one of:
+#'   * `NULL`: the default. The inner names of the field are not used.
+#'   * A string: Use only if the input form is `"object"` or `"vector"`, and
+#'   `.values_to` is a string. The inner names of the field will populate the
+#'   specified column in the field's tibble.
+#'
+#' @name .shared-params-tib
+#' @keywords internal
+NULL
+
+# .shared-params-tree ----
+
+#' Shared (un)nest_tree parameters
+#'
+#' These parameters are used in multiple `nest_tree()` or `unnest_tree()`
+#' helpers. They are defined here to make them easier to import and to find.
+#' This break-out is for parameters that differ between `(un)nest_tree()`
+#' helpers and other functions that might use the same parameters.
+#'
+#' @param col (`character`, `integer`, or `symbol`) Defused R code describing a
+#'   selection according to the tidyselect syntax.
+#' @param col_arg (`character(1)`) The name of the `col` argument, used for
+#'   error messages.
+#' @param ids (`character` or `integer`) The potential child ids to compare
+#'   against.
+#' @param parent_ids (`character` or `integer`) The parent ids to check.
+#'
+#' @name .shared-params-tree
+#' @keywords internal
+NULL
