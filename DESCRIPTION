@@ -1,6 +1,6 @@
 Package: tibblify
 Title: Rectangle Nested Lists
-Version: 0.4.0
+Version: 0.4.1
 Authors@R: c(
     person("Jon", "Harmon", , "jonthegeek@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-4781-4346")),
@@ -32,10 +32,10 @@ Encoding: UTF-8
 Language: en-US
 LazyData: true
 NeedsCompilation: yes
-Packaged: 2026-05-08 18:00:43 UTC; jonth
+Packaged: 2026-05-11 16:27:59 UTC; jonth
 Author: Jon Harmon [aut, cre] (ORCID: <https://orcid.org/0000-0003-4781-4346>),
   Maximilian Girlich [aut, cph],
   Kirill Müller [ctb]
 Maintainer: Jon Harmon <jonthegeek@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-05-09 16:30:02 UTC
+Date/Publication: 2026-05-12 18:40:14 UTC
